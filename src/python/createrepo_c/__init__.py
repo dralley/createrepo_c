@@ -2,8 +2,11 @@
 """
 
 import os
+from pathlib import Path
+import shutil
 import subprocess
 import sys
+import tempfile
 
 from . import _createrepo_c
 from ._createrepo_c import *
@@ -357,6 +360,193 @@ def decompress_file(src, dst, comtype, stat=None):
 compression_suffix  = _createrepo_c.compression_suffix
 detect_compression  = _createrepo_c.detect_compression
 compression_type    = _createrepo_c.compression_type
+
+
+class RepositoryWriter:
+    repomd_xml_name = "repomd.xml"
+    pri_xml_name = "primary.xml"
+    fil_xml_name = "filelists.xml"
+    oth_xml_name = "other.xml"
+    upd_xml_name = "updateinfo.xml"
+    mod_yml_name = "modules.yaml"
+    comps_xml_name = "comps.xml"
+    pri_db_name = "primary.sqlite"
+    fil_db_name = "filelists.sqlite"
+    oth_db_name = "other.sqlite"
+
+    def __init__(self,
+                 destination,
+                 unique_md_filenames=True,
+                 with_sqlite=False,
+                 with_zchunk=False,
+                 metadata_compression=GZ_COMPRESSION,
+                 general_compression=GZ_COMPRESSION,
+                 metadata_checksum_type=SHA256,
+                 package_checksum_type=SHA256
+                ):
+        # TODO: create in temp dir, then move when completed
+        # self._working_dir = tempfile.TemporaryDirectory()
+        self._final_path = Path(destination)
+        self._repomd = Repomd()
+
+        self._unique_md_filenames = unique_md_filenames
+        self._with_sqlite = with_sqlite
+        self._with_zchunk = with_zchunk
+        self._metadata_checksum_type=metadata_checksum_type
+        self._package_checksum_type=package_checksum_type
+
+        self._has_set_num_pkgs = False
+
+        # TODO: allow in-place updates?
+        # if os.path.exists(destination):
+        #     if not overwrite:
+        #         raise ValueError("Directory already exists")
+        #     else:
+        #         pass
+        # os.makedirs(destination, exist_ok=True)
+        repodata_path = self.repodata_path
+        if os.path.exists(repodata_path):
+            x = 0
+            while True:
+                new_repodata_path = f"{repodata_path}_{x}"
+                if not os.path.exists(new_repodata_path):
+                    shutil.move(repodata_path, new_repodata_path)
+                    break
+                x += 1
+        os.mkdir(repodata_path)
+
+        def get_compressed_extension(compressiontype):
+            if compressiontype == NO_COMPRESSION:
+                return ""
+            elif compressiontype == GZ_COMPRESSION:
+                return ".gz"
+            elif compressiontype == BZ2_COMPRESSION:
+                return ".bz2"
+            elif compressiontype == XZ_COMPRESSION:
+                return ".xz"
+            else:
+                raise ValueError("Provided invalid compression type")
+
+        # TODO: maybe there's a better way of handling different compression options
+        metadata_extension = get_compressed_extension(metadata_compression)
+        general_extension = get_compressed_extension(general_compression)
+
+        self.pri_xml_path = Path(repodata_path) / (self.pri_xml_name + metadata_extension)
+        self.fil_xml_path = Path(repodata_path) / (self.fil_xml_name + metadata_extension)
+        self.oth_xml_path = Path(repodata_path) / (self.oth_xml_name + metadata_extension)
+        self.pri_db_path  = Path(repodata_path) / (self.pri_db_name  + general_extension)
+        self.fil_db_path  = Path(repodata_path) / (self.fil_db_name  + general_extension)
+        self.oth_db_path  = Path(repodata_path) / (self.oth_db_name  + general_extension)
+        self.upd_xml_path = Path(repodata_path) / (self.upd_xml_name + general_extension)
+
+        self.repomdrecords = {
+            "primary":      self.pri_xml_path,
+            "filelists":    self.fil_xml_path,
+            "other":        self.oth_xml_path,
+            "primary_db":   self.pri_db_path,
+            "filelists_db": self.fil_db_path,
+            "other_db":     self.oth_db_path,
+            "updateinfo":   self.upd_xml_path,
+        }
+
+        self.pri_xml = PrimaryXmlFile(str(self.pri_xml_path))
+        self.fil_xml = FilelistsXmlFile(str(self.fil_xml_path))
+        self.oth_xml = OtherXmlFile(str(self.oth_xml_path))
+
+        self.pri_db = PrimarySqlite(str(self.pri_db_path)) if with_sqlite else None
+        self.fil_db = FilelistsSqlite(str(self.fil_db_path)) if with_sqlite else None
+        self.oth_db = OtherSqlite(str(self.oth_db_path)) if with_sqlite else None
+
+        self.upd_xml = None
+
+    @property
+    def path(self):
+        return self._final_path
+
+    @property
+    def repodata_path(self):
+        return self.path / "repodata"
+
+    def set_revision(self, revision):
+        self._repomd.set_revision(revision)
+
+    def set_num_of_pkgs(self, num):
+        self._has_set_num_pkgs = True
+
+        self.pri_xml.set_num_of_pkgs(num)
+        self.fil_xml.set_num_of_pkgs(num)
+        self.oth_xml.set_num_of_pkgs(num)
+
+    def add_pkg_from_file(self, path, location=""):
+        # TODO: copy package file
+        pkg = package_from_rpm(path)
+        filename = os.path.basename(path)
+        pkg.location_href = os.path.join(location, filename)
+        self.add_pkg(pkg)
+
+    def add_pkg(self, pkg):
+        assert self._has_set_num_pkgs, "Must set the number of packages before adding packages"
+
+        self.pri_xml.add_pkg(pkg)
+        self.fil_xml.add_pkg(pkg)
+        self.oth_xml.add_pkg(pkg)
+
+        if self._with_sqlite:
+            self.pri_db.add_pkg(pkg)
+            self.fil_db.add_pkg(pkg)
+            self.oth_db.add_pkg(pkg)
+
+    def add_repomd_metadata(self, name, path):
+        new_path = self.repodata_path / path.name
+        shutil.copy2(path, new_path)
+        self.repomdrecords[name] = path
+
+    def add_update_record(self, rec):
+        if not self.upd_xml:
+            self.upd_xml = UpdateInfo(self.upd_xml_path)
+        self.upd_xml.append(rec)
+
+    def add_content_tag(self, tag):
+        self._repomd.add_content_tag(tag)
+
+    def add_distro_tag(self, tag, cpeid=None):
+        self._repomd.add_distro_tag(tag, cpeid=cpeid)
+
+    def add_repo_tag(self, tag):
+        self._repomd.add_repo_tag(tag)
+
+    def finish(self):
+        self.pri_xml.close()
+        self.fil_xml.close()
+        self.oth_xml.close()
+
+        if self.upd_xml:
+            self.upd_xml.close()
+
+        update_sqlite = {
+            "primary": self.pri_db,
+            "filelists": self.fil_db,
+            "other": self.oth_db,
+        }
+
+        # Add records into the repomd.xml
+        for record_name, path in self.repomdrecords.items():
+            if path.exists():
+                record = RepomdRecord(record_name, str(path))
+                record.fill(SHA256)
+                if record_name in update_sqlite and update_sqlite[record_name]:
+                    update_sqlite[record_name].dbinfo_update(record.checksum)
+                    update_sqlite[record_name].close()
+
+                if self._unique_md_filenames:
+                    record.rename_file()
+                self._repomd.set_record(record)
+
+        # Write repomd.xml
+        with open(self.repodata_path / self.repomd_xml_name, "w") as repomd_xml_file:
+            repomd_xml_file.write(self._repomd.xml_dump())
+
+        # TODO: easy signing option?
 
 
 # If we have been built as a Python package, e.g. "setup.py", this is where the binaries
