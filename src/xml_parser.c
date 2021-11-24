@@ -28,7 +28,6 @@
 
 #define ERR_DOMAIN      CREATEREPO_C_ERROR
 
-
 cr_ParserData *
 cr_xml_parser_data(unsigned int numstates)
 {
