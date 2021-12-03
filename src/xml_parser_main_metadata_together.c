@@ -371,7 +371,7 @@ int cr_xml_parse_main_metadata_together(const char *primary_path,
             } else {
                 g_set_error(err, ERR_DOMAIN, CRE_CBINTERRUPTED, "Parsing interrupted");
             }
-            cr_package_free(package);
+            // cr_package_free(package);   // breaks test_xml_parser_main_metadata_together_pkgcb_abort
             cr_PkgIterator_free(pkg_iterator, err);
             return (*err)->code;
         } else {
@@ -553,10 +553,12 @@ void cr_PkgIterator_free(cr_PkgIterator *iter, GError **err) {
     if (iter->allow_out_of_order) {
         g_hash_table_destroy(cbdata->in_progress_pkgs_hash);
     } else {
-        cr_slist_free_full(cbdata->in_progress_pkgs_list, (GDestroyNotify) cr_package_free);
+        // cr_slist_free_full(cbdata->in_progress_pkgs_list, (GDestroyNotify) cr_package_free);
+        g_slist_free(cbdata->in_progress_pkgs_list);
     }
 
-    g_queue_free_full(cbdata->finished_pkgs_queue, (GDestroyNotify) cr_package_free);
+    // g_queue_free_full(cbdata->finished_pkgs_queue, (GDestroyNotify) cr_package_free);
+    g_queue_free(cbdata->finished_pkgs_queue);
 
     g_free(cbdata);
     g_free(iter);
