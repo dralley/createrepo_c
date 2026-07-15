@@ -249,6 +249,6 @@ static PyType_Slot Sqlite_Type_slots[] = {
 PyType_Spec Sqlite_Type_spec = {
     .name = "createrepo_c.Sqlite",
     .basicsize = sizeof(_SqliteObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
     .slots = Sqlite_Type_slots,
 };

@@ -252,6 +252,6 @@ static PyType_Slot MetadataLocation_Type_slots[] = {
 PyType_Spec MetadataLocation_Type_spec = {
     .name = "createrepo_c.MetadataLocation",
     .basicsize = sizeof(_MetadataLocationObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
     .slots = MetadataLocation_Type_slots,
 };

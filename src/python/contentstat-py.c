@@ -254,6 +254,6 @@ static PyType_Slot ContentStat_Type_slots[] = {
 PyType_Spec ContentStat_Type_spec = {
     .name = "createrepo_c.ContentStat",
     .basicsize = sizeof(_ContentStatObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
     .slots = ContentStat_Type_slots,
 };

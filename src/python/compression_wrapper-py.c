@@ -294,6 +294,6 @@ static PyType_Slot CrFile_Type_slots[] = {
 PyType_Spec CrFile_Type_spec = {
     .name = "createrepo_c.CrFile",
     .basicsize = sizeof(_CrFileObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
     .slots = CrFile_Type_slots,
 };

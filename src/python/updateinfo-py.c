@@ -309,6 +309,6 @@ static PyType_Slot UpdateInfo_Type_slots[] = {
 PyType_Spec UpdateInfo_Type_spec = {
     .name = "createrepo_c.UpdateInfo",
     .basicsize = sizeof(_UpdateInfoObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
     .slots = UpdateInfo_Type_slots,
 };
