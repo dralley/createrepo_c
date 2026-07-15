@@ -22,10 +22,9 @@
 
 #include "src/createrepo_c.h"
 
-extern PyTypeObject UpdateCollectionPackage_Type;
+extern PyType_Spec UpdateCollectionPackage_Type_spec;
 
-#define UpdateCollectionPackageObject_Check(o) \
-            PyObject_TypeCheck(o, &UpdateCollectionPackage_Type)
+int UpdateCollectionPackageObject_Check(PyObject *o);
 
 PyObject *Object_FromUpdateCollectionPackage(cr_UpdateCollectionPackage *rec);
 cr_UpdateCollectionPackage *UpdateCollectionPackage_FromPyObject(PyObject *o);

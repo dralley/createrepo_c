@@ -22,9 +22,9 @@
 
 #include "src/createrepo_c.h"
 
-extern PyTypeObject MetadataLocation_Type;
+extern PyType_Spec MetadataLocation_Type_spec;
 
-#define MetadataLocationObject_Check(o)   PyObject_TypeCheck(o, &MetadataLocation_Type)
+int MetadataLocationObject_Check(PyObject *o);
 struct cr_MetadataLocation *MetadataLocation_FromPyObject(PyObject *o);
 
 #endif

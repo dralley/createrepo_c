@@ -82,7 +82,7 @@ updaterecord_new(PyTypeObject *type,
                  G_GNUC_UNUSED PyObject *args,
                  G_GNUC_UNUSED PyObject *kwds)
 {
-    _UpdateRecordObject *self = (_UpdateRecordObject *)type->tp_alloc(type, 0);
+    _UpdateRecordObject *self = (_UpdateRecordObject *)PyType_GenericAlloc(type, 0);
     if (self) {
         self->record = NULL;
     }
@@ -116,8 +116,10 @@ updaterecord_dealloc(_UpdateRecordObject *self)
 {
     if (self->record)
         cr_updaterecord_free(self->record);
-    freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
+    PyTypeObject *tp = Py_TYPE((PyObject *)self);
+    freefunc free_func = PyType_GetSlot(tp, Py_tp_free);
     free_func(self);
+    Py_DECREF(tp);
 }
 
 static PyObject *
@@ -489,17 +491,21 @@ static PyGetSetDef updaterecord_getsetters[] = {
 
 /* Object */
 
-PyTypeObject UpdateRecord_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "createrepo_c.UpdateRecord",
-    .tp_basicsize = sizeof(_UpdateRecordObject),
-    .tp_dealloc = (destructor) updaterecord_dealloc,
-    .tp_repr = (reprfunc) updaterecord_repr,
-    .tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-    .tp_doc = updaterecord_init__doc__,
-    .tp_iter = PyObject_SelfIter,
-    .tp_methods = updaterecord_methods,
-    .tp_getset = updaterecord_getsetters,
-    .tp_init = (initproc) updaterecord_init,
-    .tp_new = updaterecord_new,
+static PyType_Slot UpdateRecord_Type_slots[] = {
+    {Py_tp_dealloc, (destructor) updaterecord_dealloc},
+    {Py_tp_repr, (reprfunc) updaterecord_repr},
+    {Py_tp_doc, (void *) updaterecord_init__doc__},
+    {Py_tp_iter, PyObject_SelfIter},
+    {Py_tp_methods, updaterecord_methods},
+    {Py_tp_getset, updaterecord_getsetters},
+    {Py_tp_init, (initproc) updaterecord_init},
+    {Py_tp_new, updaterecord_new},
+    {0, NULL}
+};
+
+PyType_Spec UpdateRecord_Type_spec = {
+    .name = "createrepo_c.UpdateRecord",
+    .basicsize = sizeof(_UpdateRecordObject),
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .slots = UpdateRecord_Type_slots,
 };

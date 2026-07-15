@@ -790,7 +790,7 @@ pkg_iterator_new(PyTypeObject *type,
             G_GNUC_UNUSED PyObject *args,
             G_GNUC_UNUSED PyObject *kwds)
 {
-    _PkgIteratorObject *self = (_PkgIteratorObject *)type->tp_alloc(type, 0);
+    _PkgIteratorObject *self = (_PkgIteratorObject *)PyType_GenericAlloc(type, 0);
     if (self) {
         self->pkg_iterator = NULL;
         self->cbdata = g_malloc0(sizeof(CbData));
@@ -897,8 +897,10 @@ pkg_iterator_dealloc(_PkgIteratorObject *self)
         free(self->cbdata);
     }
 
-    freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
+    PyTypeObject *tp = Py_TYPE((PyObject *)self);
+    freefunc free_func = PyType_GetSlot(tp, Py_tp_free);
     free_func(self);
+    Py_DECREF(tp);
 }
 
 static PyObject *
@@ -969,18 +971,20 @@ static struct PyMethodDef pkg_iterator_methods[] = {
 
 /* Object */
 
-PyTypeObject PkgIterator_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-        .tp_name = "createrepo_c.PkgIterator",
-    .tp_basicsize = sizeof(_PkgIteratorObject),
-    .tp_dealloc = (destructor) pkg_iterator_dealloc,
-    .tp_repr = 0, // (reprfunc) pkg_iterator_repr,
-    .tp_str = 0, //(reprfunc) pkg_iterator_str,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_doc = pkg_iterator_init__doc__,
-    .tp_iter = PyObject_SelfIter,
-    .tp_iternext = pkg_iterator_next_package,
-    .tp_methods = pkg_iterator_methods,
-    .tp_init = (initproc) pkg_iterator_init,
-    .tp_new = pkg_iterator_new,
+static PyType_Slot PkgIterator_Type_slots[] = {
+    {Py_tp_dealloc, (destructor) pkg_iterator_dealloc},
+    {Py_tp_doc, (void *) pkg_iterator_init__doc__},
+    {Py_tp_iter, PyObject_SelfIter},
+    {Py_tp_iternext, pkg_iterator_next_package},
+    {Py_tp_methods, pkg_iterator_methods},
+    {Py_tp_init, (initproc) pkg_iterator_init},
+    {Py_tp_new, pkg_iterator_new},
+    {0, NULL}
+};
+
+PyType_Spec PkgIterator_Type_spec = {
+    .name = "createrepo_c.PkgIterator",
+    .basicsize = sizeof(_PkgIteratorObject),
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .slots = PkgIterator_Type_slots,
 };

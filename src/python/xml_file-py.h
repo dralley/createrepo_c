@@ -22,8 +22,8 @@
 
 #include "src/createrepo_c.h"
 
-extern PyTypeObject XmlFile_Type;
+extern PyType_Spec XmlFile_Type_spec;
 
-#define XmlFileObject_Check(o)   PyObject_TypeCheck(o, &XmlFile_Type)
+int XmlFileObject_Check(PyObject *o);
 
 #endif

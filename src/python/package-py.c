@@ -95,7 +95,7 @@ package_new(PyTypeObject *type,
             G_GNUC_UNUSED PyObject *args,
             G_GNUC_UNUSED PyObject *kwds)
 {
-    _PackageObject *self = (_PackageObject *)type->tp_alloc(type, 0);
+    _PackageObject *self = (_PackageObject *)PyType_GenericAlloc(type, 0);
     if (self) {
         self->package = NULL;
         self->free_on_destroy = 1;
@@ -141,8 +141,10 @@ package_dealloc(_PackageObject *self)
         Py_DECREF(self->parent);
         self->parent = NULL;
     }
-    freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
+    PyTypeObject *tp = Py_TYPE((PyObject *)self);
+    freefunc free_func = PyType_GetSlot(tp, Py_tp_free);
     free_func(self);
+    Py_DECREF(tp);
 }
 
 static PyObject *
@@ -634,18 +636,22 @@ static PyGetSetDef package_getsetters[] = {
 
 /* Object */
 
-PyTypeObject Package_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "createrepo_c.Package",
-    .tp_basicsize = sizeof(_PackageObject),
-    .tp_dealloc = (destructor) package_dealloc,
-    .tp_repr = (reprfunc) package_repr,
-    .tp_str = (reprfunc) package_str,
-    .tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-    .tp_doc = package_init__doc__,
-    .tp_iter = PyObject_SelfIter,
-    .tp_methods = package_methods,
-    .tp_getset = package_getsetters,
-    .tp_init = (initproc) package_init,
-    .tp_new = package_new,
+static PyType_Slot Package_Type_slots[] = {
+    {Py_tp_dealloc, (destructor) package_dealloc},
+    {Py_tp_repr, (reprfunc) package_repr},
+    {Py_tp_str, (reprfunc) package_str},
+    {Py_tp_doc, (void *) package_init__doc__},
+    {Py_tp_iter, PyObject_SelfIter},
+    {Py_tp_methods, package_methods},
+    {Py_tp_getset, package_getsetters},
+    {Py_tp_init, (initproc) package_init},
+    {Py_tp_new, package_new},
+    {0, NULL}
+};
+
+PyType_Spec Package_Type_spec = {
+    .name = "createrepo_c.Package",
+    .basicsize = sizeof(_PackageObject),
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .slots = Package_Type_slots,
 };

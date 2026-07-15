@@ -22,8 +22,8 @@
 
 #include "src/createrepo_c.h"
 
-extern PyTypeObject Metadata_Type;
+extern PyType_Spec Metadata_Type_spec;
 
-#define MetadataObject_Check(o)   PyObject_TypeCheck(o, &Metadata_Type)
+int MetadataObject_Check(PyObject *o);
 
 #endif

@@ -22,9 +22,9 @@
 
 #include "src/createrepo_c.h"
 
-extern PyTypeObject Repomd_Type;
+extern PyType_Spec Repomd_Type_spec;
 
-#define RepomdObject_Check(o)   PyObject_TypeCheck(o, &Repomd_Type)
+int RepomdObject_Check(PyObject *o);
 
 cr_Repomd *Repomd_FromPyObject(PyObject *o);
 

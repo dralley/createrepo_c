@@ -81,7 +81,7 @@ updatecollection_new(PyTypeObject *type,
                      G_GNUC_UNUSED PyObject *args,
                      G_GNUC_UNUSED PyObject *kwds)
 {
-    _UpdateCollectionObject *self = (_UpdateCollectionObject *)type->tp_alloc(type, 0);
+    _UpdateCollectionObject *self = (_UpdateCollectionObject *)PyType_GenericAlloc(type, 0);
     if (self) {
         self->collection = NULL;
     }
@@ -115,8 +115,10 @@ updatecollection_dealloc(_UpdateCollectionObject *self)
 {
     if (self->collection)
         cr_updatecollection_free(self->collection);
-    freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
+    PyTypeObject *tp = Py_TYPE((PyObject *)self);
+    freefunc free_func = PyType_GetSlot(tp, Py_tp_free);
     free_func(self);
+    Py_DECREF(tp);
 }
 
 static PyObject *
@@ -326,17 +328,21 @@ static PyGetSetDef updatecollection_getsetters[] = {
 
 /* Object */
 
-PyTypeObject UpdateCollection_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "createrepo_c.UpdateCollection",
-    .tp_basicsize = sizeof(_UpdateCollectionObject),
-    .tp_dealloc = (destructor) updatecollection_dealloc,
-    .tp_repr = (reprfunc) updatecollection_repr,
-    .tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-    .tp_doc = updatecollection_init__doc__,
-    .tp_iter = PyObject_SelfIter,
-    .tp_methods = updatecollection_methods,
-    .tp_getset = updatecollection_getsetters,
-    .tp_init = (initproc) updatecollection_init,
-    .tp_new = updatecollection_new,
+static PyType_Slot UpdateCollection_Type_slots[] = {
+    {Py_tp_dealloc, (destructor) updatecollection_dealloc},
+    {Py_tp_repr, (reprfunc) updatecollection_repr},
+    {Py_tp_doc, (void *) updatecollection_init__doc__},
+    {Py_tp_iter, PyObject_SelfIter},
+    {Py_tp_methods, updatecollection_methods},
+    {Py_tp_getset, updatecollection_getsetters},
+    {Py_tp_init, (initproc) updatecollection_init},
+    {Py_tp_new, updatecollection_new},
+    {0, NULL}
+};
+
+PyType_Spec UpdateCollection_Type_spec = {
+    .name = "createrepo_c.UpdateCollection",
+    .basicsize = sizeof(_UpdateCollectionObject),
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .slots = UpdateCollection_Type_slots,
 };

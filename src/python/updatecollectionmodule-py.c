@@ -79,7 +79,7 @@ updatecollectionmodule_new(PyTypeObject *type,
                     G_GNUC_UNUSED PyObject *args,
                     G_GNUC_UNUSED PyObject *kwds)
 {
-    _UpdateCollectionModuleObject *self = (_UpdateCollectionModuleObject *)type->tp_alloc(type, 0);
+    _UpdateCollectionModuleObject *self = (_UpdateCollectionModuleObject *)PyType_GenericAlloc(type, 0);
     if (self) {
         self->module = NULL;
     }
@@ -113,8 +113,10 @@ updatecollectionmodule_dealloc(_UpdateCollectionModuleObject *self)
 {
     if (self->module)
         cr_updatecollectionmodule_free(self->module);
-    freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
+    PyTypeObject *tp = Py_TYPE((PyObject *)self);
+    freefunc free_func = PyType_GetSlot(tp, Py_tp_free);
     free_func(self);
+    Py_DECREF(tp);
 }
 
 static PyObject *
@@ -223,17 +225,21 @@ static PyGetSetDef updatecollectionmodule_getsetters[] = {
 
 /* Object */
 
-PyTypeObject UpdateCollectionModule_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "createrepo_c.UpdateCollectionModule",
-    .tp_basicsize = sizeof(_UpdateCollectionModuleObject),
-    .tp_dealloc = (destructor) updatecollectionmodule_dealloc,
-    .tp_repr = (reprfunc) updatecollectionmodule_repr,
-    .tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-    .tp_doc = updatecollectionmodule_init__doc__,
-    .tp_iter = PyObject_SelfIter,
-    .tp_methods = updatecollectionmodule_methods,
-    .tp_getset = updatecollectionmodule_getsetters,
-    .tp_init = (initproc) updatecollectionmodule_init,
-    .tp_new = updatecollectionmodule_new,
+static PyType_Slot UpdateCollectionModule_Type_slots[] = {
+    {Py_tp_dealloc, (destructor) updatecollectionmodule_dealloc},
+    {Py_tp_repr, (reprfunc) updatecollectionmodule_repr},
+    {Py_tp_doc, (void *) updatecollectionmodule_init__doc__},
+    {Py_tp_iter, PyObject_SelfIter},
+    {Py_tp_methods, updatecollectionmodule_methods},
+    {Py_tp_getset, updatecollectionmodule_getsetters},
+    {Py_tp_init, (initproc) updatecollectionmodule_init},
+    {Py_tp_new, updatecollectionmodule_new},
+    {0, NULL}
+};
+
+PyType_Spec UpdateCollectionModule_Type_spec = {
+    .name = "createrepo_c.UpdateCollectionModule",
+    .basicsize = sizeof(_UpdateCollectionModuleObject),
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .slots = UpdateCollectionModule_Type_slots,
 };

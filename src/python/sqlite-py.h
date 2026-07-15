@@ -22,8 +22,8 @@
 
 #include "src/createrepo_c.h"
 
-extern PyTypeObject Sqlite_Type;
+extern PyType_Spec Sqlite_Type_spec;
 
-#define SqliteObject_Check(o)   PyObject_TypeCheck(o, &Sqlite_Type)
+int SqliteObject_Check(PyObject *o);
 
 #endif

@@ -59,7 +59,7 @@ contentstat_new(PyTypeObject *type,
                 G_GNUC_UNUSED PyObject *args,
                 G_GNUC_UNUSED PyObject *kwds)
 {
-    _ContentStatObject *self = (_ContentStatObject *)type->tp_alloc(type, 0);
+    _ContentStatObject *self = (_ContentStatObject *)PyType_GenericAlloc(type, 0);
     if (self)
         self->stat = NULL;
     return (PyObject *)self;
@@ -100,8 +100,10 @@ contentstat_dealloc(_ContentStatObject *self)
 {
     if (self->stat)
         cr_contentstat_free(self->stat, NULL);
-    freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
+    PyTypeObject *tp = Py_TYPE((PyObject *)self);
+    freefunc free_func = PyType_GetSlot(tp, Py_tp_free);
     free_func(self);
+    Py_DECREF(tp);
 }
 
 static PyObject *
@@ -218,16 +220,20 @@ static PyGetSetDef contentstat_getsetters[] = {
 
 /* Object */
 
-PyTypeObject ContentStat_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "createrepo_c.ContentStat",
-    .tp_basicsize = sizeof(_ContentStatObject),
-    .tp_dealloc = (destructor) contentstat_dealloc,
-    .tp_repr = (reprfunc) contentstat_repr,
-    .tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-    .tp_doc = contentstat_init__doc__,
-    .tp_iter = PyObject_SelfIter,
-    .tp_getset = contentstat_getsetters,
-    .tp_init = (initproc) contentstat_init,
-    .tp_new = contentstat_new,
+static PyType_Slot ContentStat_Type_slots[] = {
+    {Py_tp_dealloc, (destructor) contentstat_dealloc},
+    {Py_tp_repr, (reprfunc) contentstat_repr},
+    {Py_tp_doc, (void *) contentstat_init__doc__},
+    {Py_tp_iter, PyObject_SelfIter},
+    {Py_tp_getset, contentstat_getsetters},
+    {Py_tp_init, (initproc) contentstat_init},
+    {Py_tp_new, contentstat_new},
+    {0, NULL}
+};
+
+PyType_Spec ContentStat_Type_spec = {
+    .name = "createrepo_c.ContentStat",
+    .basicsize = sizeof(_ContentStatObject),
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .slots = ContentStat_Type_slots,
 };

@@ -22,9 +22,9 @@
 
 #include "src/createrepo_c.h"
 
-extern PyTypeObject UpdateInfo_Type;
+extern PyType_Spec UpdateInfo_Type_spec;
 
-#define UpdateInfoObject_Check(o)   PyObject_TypeCheck(o, &UpdateInfo_Type)
+int UpdateInfoObject_Check(PyObject *o);
 
 cr_UpdateInfo *UpdateInfo_FromPyObject(PyObject *o);
 

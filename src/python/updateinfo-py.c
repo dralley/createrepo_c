@@ -60,7 +60,7 @@ updateinfo_new(PyTypeObject *type,
                G_GNUC_UNUSED PyObject *args,
                G_GNUC_UNUSED PyObject *kwds)
 {
-    _UpdateInfoObject *self = (_UpdateInfoObject *)type->tp_alloc(type, 0);
+    _UpdateInfoObject *self = (_UpdateInfoObject *)PyType_GenericAlloc(type, 0);
     if (self) {
         self->updateinfo = NULL;
     }
@@ -95,8 +95,10 @@ updateinfo_dealloc(_UpdateInfoObject *self)
 {
     if (self->updateinfo)
         cr_updateinfo_free(self->updateinfo);
-    freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
+    PyTypeObject *tp = Py_TYPE((PyObject *)self);
+    freefunc free_func = PyType_GetSlot(tp, Py_tp_free);
     free_func(self);
+    Py_DECREF(tp);
 }
 
 static PyObject *
@@ -271,17 +273,21 @@ static PyGetSetDef updateinfo_getsetters[] = {
 /* Object */
 
 
-PyTypeObject UpdateInfo_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "createrepo_c.UpdateInfo",
-    .tp_basicsize = sizeof(_UpdateInfoObject),
-    .tp_dealloc = (destructor) updateinfo_dealloc,
-    .tp_repr = (reprfunc) updateinfo_repr,
-    .tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-    .tp_doc = updateinfo_init__doc__,
-    .tp_iter = PyObject_SelfIter,
-    .tp_methods = updateinfo_methods,
-    .tp_getset = updateinfo_getsetters,
-    .tp_init = (initproc) updateinfo_init,
-    .tp_new = updateinfo_new,
+static PyType_Slot UpdateInfo_Type_slots[] = {
+    {Py_tp_dealloc, (destructor) updateinfo_dealloc},
+    {Py_tp_repr, (reprfunc) updateinfo_repr},
+    {Py_tp_doc, (void *) updateinfo_init__doc__},
+    {Py_tp_iter, PyObject_SelfIter},
+    {Py_tp_methods, updateinfo_methods},
+    {Py_tp_getset, updateinfo_getsetters},
+    {Py_tp_init, (initproc) updateinfo_init},
+    {Py_tp_new, updateinfo_new},
+    {0, NULL}
+};
+
+PyType_Spec UpdateInfo_Type_spec = {
+    .name = "createrepo_c.UpdateInfo",
+    .basicsize = sizeof(_UpdateInfoObject),
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .slots = UpdateInfo_Type_slots,
 };

@@ -55,7 +55,7 @@ xmlfile_new(PyTypeObject *type,
             G_GNUC_UNUSED PyObject *args,
             G_GNUC_UNUSED PyObject *kwds)
 {
-    _XmlFileObject *self = (_XmlFileObject *)type->tp_alloc(type, 0);
+    _XmlFileObject *self = (_XmlFileObject *)PyType_GenericAlloc(type, 0);
     if (self) {
         self->xmlfile = NULL;
         self->py_stat = NULL;
@@ -133,8 +133,10 @@ xmlfile_dealloc(_XmlFileObject *self)
 {
     cr_xmlfile_close(self->xmlfile, NULL);
     Py_XDECREF(self->py_stat);
-    freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
+    PyTypeObject *tp = Py_TYPE((PyObject *)self);
+    freefunc free_func = PyType_GetSlot(tp, Py_tp_free);
     free_func(self);
+    Py_DECREF(tp);
 }
 
 static PyObject *
@@ -277,16 +279,20 @@ static struct PyMethodDef xmlfile_methods[] = {
     {NULL, NULL, 0, NULL} /* sentinel */
 };
 
-PyTypeObject XmlFile_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "createrepo_c.XmlFile",
-    .tp_basicsize = sizeof(_XmlFileObject),
-    .tp_dealloc = (destructor) xmlfile_dealloc,
-    .tp_repr = (reprfunc) xmlfile_repr,
-    .tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-    .tp_doc = xmlfile_init__doc__,
-    .tp_iter = PyObject_SelfIter,
-    .tp_methods = xmlfile_methods,
-    .tp_init = (initproc) xmlfile_init,
-    .tp_new = xmlfile_new,
+static PyType_Slot XmlFile_Type_slots[] = {
+    {Py_tp_dealloc, (destructor) xmlfile_dealloc},
+    {Py_tp_repr, (reprfunc) xmlfile_repr},
+    {Py_tp_doc, (void *) xmlfile_init__doc__},
+    {Py_tp_iter, PyObject_SelfIter},
+    {Py_tp_methods, xmlfile_methods},
+    {Py_tp_init, (initproc) xmlfile_init},
+    {Py_tp_new, xmlfile_new},
+    {0, NULL}
+};
+
+PyType_Spec XmlFile_Type_spec = {
+    .name = "createrepo_c.XmlFile",
+    .basicsize = sizeof(_XmlFileObject),
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .slots = XmlFile_Type_slots,
 };

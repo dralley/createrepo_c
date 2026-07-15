@@ -22,9 +22,9 @@
 
 #include "src/createrepo_c.h"
 
-extern PyTypeObject ContentStat_Type;
+extern PyType_Spec ContentStat_Type_spec;
 
-#define ContentStatObject_Check(o)   PyObject_TypeCheck(o, &ContentStat_Type)
+int ContentStatObject_Check(PyObject *o);
 
 cr_ContentStat *ContentStat_FromPyObject(PyObject *o);
 
