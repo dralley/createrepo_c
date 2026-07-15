@@ -26,6 +26,7 @@
 #include "exception-py.h"
 #include "contentstat-py.h"
 #include "typeconversion.h"
+#include "modulestate.h"
 
 /*
  * Module functions
@@ -84,11 +85,21 @@ typedef struct {
 
 static PyObject * py_close(_CrFileObject *self, void *nothing);
 
+int
+CrFileObject_Check(PyObject *o)
+{
+    cr_module_state *state = get_cr_module_state_global();
+    if (!state) {
+        PyErr_Clear();
+        return 0;
+    }
+    return PyObject_TypeCheck(o, state->CrFile_Type);
+}
+
 static int
 check_CrFileStatus(const _CrFileObject *self)
 {
     assert(self != NULL);
-    assert(CrFileObject_Check(self));
     if (self->f == NULL) {
         PyErr_SetString(CrErr_Exception,
             "Improper createrepo_c CrFile object (Already closed file?).");

@@ -29,6 +29,7 @@
 #include "repomd-py.h"
 #include "updateinfo-py.h"
 #include "exception-py.h"
+#include "modulestate.h"
 
 typedef struct {
     PyObject *py_newpkgcb;
@@ -633,7 +634,7 @@ py_xml_parse_other_snippet(G_GNUC_UNUSED PyObject *self, PyObject *args)
 }
 
 PyObject *
-py_xml_parse_repomd(G_GNUC_UNUSED PyObject *self, PyObject *args)
+py_xml_parse_repomd(PyObject *self, PyObject *args)
 {
     char *filename;
     PyObject *py_repomd, *py_warningcb;
@@ -641,9 +642,10 @@ py_xml_parse_repomd(G_GNUC_UNUSED PyObject *self, PyObject *args)
     cr_Repomd *repomd;
     GError *tmp_err = NULL;
 
+    cr_module_state *state = get_cr_module_state(self);
     if (!PyArg_ParseTuple(args, "sO!O:py_xml_parse_repomd",
                                          &filename,
-                                         &Repomd_Type,
+                                         state->Repomd_Type,
                                          &py_repomd,
                                          &py_warningcb)) {
         return NULL;
@@ -687,7 +689,7 @@ py_xml_parse_repomd(G_GNUC_UNUSED PyObject *self, PyObject *args)
 }
 
 PyObject *
-py_xml_parse_updateinfo(G_GNUC_UNUSED PyObject *self, PyObject *args)
+py_xml_parse_updateinfo(PyObject *self, PyObject *args)
 {
     char *filename;
     PyObject *py_updateinfo, *py_warningcb;
@@ -695,9 +697,10 @@ py_xml_parse_updateinfo(G_GNUC_UNUSED PyObject *self, PyObject *args)
     cr_UpdateInfo *updateinfo;
     GError *tmp_err = NULL;
 
+    cr_module_state *state = get_cr_module_state(self);
     if (!PyArg_ParseTuple(args, "sO!O:py_xml_parse_updateinfo",
                                          &filename,
-                                         &UpdateInfo_Type,
+                                         state->UpdateInfo_Type,
                                          &py_updateinfo,
                                          &py_warningcb)) {
         return NULL;
@@ -746,6 +749,17 @@ typedef struct {
     CbData *cbdata;
 } _PkgIteratorObject;
 
+int
+PkgIteratorObject_Check(PyObject *o)
+{
+    cr_module_state *state = get_cr_module_state_global();
+    if (!state) {
+        PyErr_Clear();
+        return 0;
+    }
+    return PyObject_TypeCheck(o, state->PkgIterator_Type);
+}
+
 cr_PkgIterator *
 PkgIterator_FromPyObject(PyObject *o)
 {
@@ -764,7 +778,7 @@ Object_FromPkgIterator(cr_PkgIterator *pkg_iterator)
         return NULL;
     }
 
-    PyObject *py_pkg_iterator = PyObject_CallObject((PyObject *)&PkgIterator_Type, NULL);
+    PyObject *py_pkg_iterator = PyObject_CallObject((PyObject *)get_cr_module_state_global()->PkgIterator_Type, NULL);
     if (!py_pkg_iterator)
         return NULL;
     ((_PkgIteratorObject *)py_pkg_iterator)->pkg_iterator = pkg_iterator;
@@ -775,7 +789,6 @@ static int
 check_PkgIteratorStatus(const _PkgIteratorObject *self)
 {
     assert(self != NULL);
-    assert(PkgIteratorObject_Check(self));
     if (self->pkg_iterator == NULL) {
         PyErr_SetString(CrErr_Exception, "Improper createrepo_c PkgIterator object.");
         return -1;

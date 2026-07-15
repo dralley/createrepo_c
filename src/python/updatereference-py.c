@@ -25,6 +25,7 @@
 #include "exception-py.h"
 #include "typeconversion.h"
 #include "contentstat-py.h"
+#include "modulestate.h"
 
 typedef struct {
     PyObject_HEAD
@@ -41,7 +42,7 @@ Object_FromUpdateReference(cr_UpdateReference *ref)
         return NULL;
     }
 
-    py_rec = PyObject_CallObject((PyObject *) &UpdateReference_Type, NULL);
+    py_rec = PyObject_CallObject((PyObject *)get_cr_module_state_global()->UpdateReference_Type, NULL);
     if (!py_rec)
         return NULL;
     cr_updatereference_free(((_UpdateReferenceObject *)py_rec)->reference);
@@ -60,11 +61,21 @@ UpdateReference_FromPyObject(PyObject *o)
     return ((_UpdateReferenceObject *)o)->reference;
 }
 
+int
+UpdateReferenceObject_Check(PyObject *o)
+{
+    cr_module_state *state = get_cr_module_state_global();
+    if (!state) {
+        PyErr_Clear();
+        return 0;
+    }
+    return PyObject_TypeCheck(o, state->UpdateReference_Type);
+}
+
 static int
 check_UpdateReferenceStatus(const _UpdateReferenceObject *self)
 {
     assert(self != NULL);
-    assert(UpdateReferenceObject_Check(self));
     if (self->reference == NULL) {
         PyErr_SetString(CrErr_Exception, "Improper createrepo_c UpdateReference object.");
         return -1;

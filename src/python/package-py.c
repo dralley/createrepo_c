@@ -24,6 +24,7 @@
 #include "package-py.h"
 #include "exception-py.h"
 #include "typeconversion.h"
+#include "modulestate.h"
 
 typedef struct {
     PyObject_HEAD
@@ -52,7 +53,7 @@ Object_FromPackage(cr_Package *pkg, int free_on_destroy)
         return NULL;
     }
 
-    pypkg = PyObject_CallObject((PyObject*)&Package_Type, NULL);
+    pypkg = PyObject_CallObject((PyObject *)get_cr_module_state_global()->Package_Type, NULL);
     if (!pypkg)
         return NULL;
     // XXX: Remove empty package in pypkg and replace it with pkg
@@ -76,11 +77,21 @@ Object_FromPackage_WithParent(cr_Package *pkg, int free_on_destroy, PyObject *pa
     return pypkg;
 }
 
+int
+PackageObject_Check(PyObject *o)
+{
+    cr_module_state *state = get_cr_module_state_global();
+    if (!state) {
+        PyErr_Clear();
+        return 0;
+    }
+    return PyObject_TypeCheck(o, state->Package_Type);
+}
+
 static int
 check_PackageStatus(const _PackageObject *self)
 {
     assert(self != NULL);
-    assert(PackageObject_Check(self));
     if (self->package == NULL) {
         PyErr_SetString(CrErr_Exception, "Improper createrepo_c Package object.");
         return -1;

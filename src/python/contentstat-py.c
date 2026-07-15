@@ -24,6 +24,7 @@
 #include "contentstat-py.h"
 #include "exception-py.h"
 #include "typeconversion.h"
+#include "modulestate.h"
 
 typedef struct {
     PyObject_HEAD
@@ -40,11 +41,21 @@ ContentStat_FromPyObject(PyObject *o)
     return ((_ContentStatObject *)o)->stat;
 }
 
+int
+ContentStatObject_Check(PyObject *o)
+{
+    cr_module_state *state = get_cr_module_state_global();
+    if (!state) {
+        PyErr_Clear();
+        return 0;
+    }
+    return PyObject_TypeCheck(o, state->ContentStat_Type);
+}
+
 static int
 check_ContentStatStatus(const _ContentStatObject *self)
 {
     assert(self != NULL);
-    assert(ContentStatObject_Check(self));
     if (self->stat == NULL) {
         PyErr_SetString(CrErr_Exception, "Improper createrepo_c ContentStat object.");
         return -1;
