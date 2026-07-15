@@ -111,9 +111,17 @@ metadata_init(_MetadataObject *self, PyObject *args, PyObject *kwds)
     return 0;
 }
 
+static int
+metadata_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    Py_VISIT(Py_TYPE(op));
+    return 0;
+}
+
 static void
 metadata_dealloc(_MetadataObject *self)
 {
+    PyObject_GC_UnTrack(self);
     if (self->md)
         cr_metadata_free(self->md);
     PyTypeObject *tp = Py_TYPE((PyObject *)self);
@@ -366,6 +374,7 @@ static struct PyMethodDef metadata_methods[] = {
 /* Object */
 
 static PyType_Slot Metadata_Type_slots[] = {
+    {Py_tp_traverse, metadata_traverse},
     {Py_tp_dealloc, (destructor) metadata_dealloc},
     {Py_tp_repr, (reprfunc) metadata_repr},
     {Py_tp_doc, (void *) metadata_init__doc__},
@@ -380,6 +389,6 @@ static PyType_Slot Metadata_Type_slots[] = {
 PyType_Spec Metadata_Type_spec = {
     .name = "createrepo_c.Metadata",
     .basicsize = sizeof(_MetadataObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     .slots = Metadata_Type_slots,
 };

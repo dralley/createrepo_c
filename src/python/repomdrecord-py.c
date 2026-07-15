@@ -126,9 +126,17 @@ repomdrecord_init(_RepomdRecordObject *self,
     return 0;
 }
 
+static int
+repomdrecord_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    Py_VISIT(Py_TYPE(op));
+    return 0;
+}
+
 static void
 repomdrecord_dealloc(_RepomdRecordObject *self)
 {
+    PyObject_GC_UnTrack(self);
     if (self->record)
         cr_repomd_record_free(self->record);
     PyTypeObject *tp = Py_TYPE((PyObject *)self);
@@ -437,6 +445,7 @@ static PyGetSetDef repomdrecord_getsetters[] = {
 /* Object */
 
 static PyType_Slot RepomdRecord_Type_slots[] = {
+    {Py_tp_traverse, repomdrecord_traverse},
     {Py_tp_dealloc, (destructor) repomdrecord_dealloc},
     {Py_tp_repr, (reprfunc) repomdrecord_repr},
     {Py_tp_doc, (void *) repomdrecord_init__doc__},
@@ -451,6 +460,6 @@ static PyType_Slot RepomdRecord_Type_slots[] = {
 PyType_Spec RepomdRecord_Type_spec = {
     .name = "createrepo_c.RepomdRecord",
     .basicsize = sizeof(_RepomdRecordObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     .slots = RepomdRecord_Type_slots,
 };

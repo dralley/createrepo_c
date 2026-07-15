@@ -113,9 +113,17 @@ sqlite_init(_SqliteObject *self, PyObject *args, G_GNUC_UNUSED PyObject *kwds)
     return 0;
 }
 
+static int
+sqlite_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    Py_VISIT(Py_TYPE(op));
+    return 0;
+}
+
 static void
 sqlite_dealloc(_SqliteObject *self)
 {
+    PyObject_GC_UnTrack(self);
     if (self->db)
         cr_db_close(self->db, NULL);
 
@@ -227,6 +235,7 @@ static struct PyMethodDef sqlite_methods[] = {
 };
 
 static PyType_Slot Sqlite_Type_slots[] = {
+    {Py_tp_traverse, sqlite_traverse},
     {Py_tp_dealloc, (destructor) sqlite_dealloc},
     {Py_tp_repr, (reprfunc) sqlite_repr},
     {Py_tp_doc, (void *) sqlite_init__doc__},
@@ -240,6 +249,6 @@ static PyType_Slot Sqlite_Type_slots[] = {
 PyType_Spec Sqlite_Type_spec = {
     .name = "createrepo_c.Sqlite",
     .basicsize = sizeof(_SqliteObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     .slots = Sqlite_Type_slots,
 };
