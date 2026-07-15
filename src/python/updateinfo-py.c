@@ -25,6 +25,7 @@
 #include "updaterecord-py.h"
 #include "exception-py.h"
 #include "typeconversion.h"
+#include "modulestate.h"
 
 typedef struct {
     PyObject_HEAD
@@ -41,11 +42,21 @@ UpdateInfo_FromPyObject(PyObject *o)
     return ((_UpdateInfoObject *)o)->updateinfo;
 }
 
+int
+UpdateInfoObject_Check(PyObject *o)
+{
+    cr_module_state *state = get_cr_module_state_global();
+    if (!state) {
+        PyErr_Clear();
+        return 0;
+    }
+    return PyObject_TypeCheck(o, state->UpdateInfo_Type);
+}
+
     static int
 check_UpdateInfoStatus(const _UpdateInfoObject *self)
 {
     assert(self != NULL);
-    assert(UpdateInfoObject_Check(self));
     if (self->updateinfo == NULL) {
         PyErr_SetString(CrErr_Exception, "Improper createrepo_c UpdateInfo object.");
         return -1;
@@ -119,7 +130,8 @@ append(_UpdateInfoObject *self, PyObject *args)
     PyObject *record;
     cr_UpdateRecord *orig, *new;
 
-    if (!PyArg_ParseTuple(args, "O!:append", &UpdateRecord_Type, &record))
+    cr_module_state *state = get_cr_module_state_global();
+    if (!PyArg_ParseTuple(args, "O!:append", state->UpdateRecord_Type, &record))
         return NULL;
     if (check_UpdateInfoStatus(self))
         return NULL;

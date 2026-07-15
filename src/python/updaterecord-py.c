@@ -28,6 +28,7 @@
 #include "exception-py.h"
 #include "typeconversion.h"
 #include "contentstat-py.h"
+#include "modulestate.h"
 
 typedef struct {
     PyObject_HEAD
@@ -44,7 +45,7 @@ Object_FromUpdateRecord(cr_UpdateRecord *rec)
         return NULL;
     }
 
-    py_rec = PyObject_CallObject((PyObject *) &UpdateRecord_Type, NULL);
+    py_rec = PyObject_CallObject((PyObject *)get_cr_module_state_global()->UpdateRecord_Type, NULL);
     if (!py_rec)
         return NULL;
     cr_updaterecord_free(((_UpdateRecordObject *)py_rec)->record);
@@ -63,11 +64,21 @@ UpdateRecord_FromPyObject(PyObject *o)
     return ((_UpdateRecordObject *)o)->record;
 }
 
+int
+UpdateRecordObject_Check(PyObject *o)
+{
+    cr_module_state *state = get_cr_module_state_global();
+    if (!state) {
+        PyErr_Clear();
+        return 0;
+    }
+    return PyObject_TypeCheck(o, state->UpdateRecord_Type);
+}
+
 static int
 check_UpdateRecordStatus(const _UpdateRecordObject *self)
 {
     assert(self != NULL);
-    assert(UpdateRecordObject_Check(self));
     if (self->record == NULL) {
         PyErr_SetString(CrErr_Exception, "Improper createrepo_c UpdateRecord object.");
         return -1;
@@ -140,8 +151,9 @@ append_reference(_UpdateRecordObject *self, PyObject *args)
     PyObject *pkg;
     cr_UpdateReference *orig, *new;
 
+    cr_module_state *state = get_cr_module_state_global();
     if (!PyArg_ParseTuple(args, "O!:append_reference",
-                          &UpdateReference_Type, &pkg))
+                          state->UpdateReference_Type, &pkg))
         return NULL;
     if (check_UpdateRecordStatus(self))
         return NULL;
@@ -162,8 +174,9 @@ append_collection(_UpdateRecordObject *self, PyObject *args)
     PyObject *pkg;
     cr_UpdateCollection *orig, *new;
 
+    cr_module_state *state = get_cr_module_state_global();
     if (!PyArg_ParseTuple(args, "O!:append_collection",
-                          &UpdateCollection_Type, &pkg))
+                          state->UpdateCollection_Type, &pkg))
         return NULL;
     if (check_UpdateRecordStatus(self))
         return NULL;

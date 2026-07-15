@@ -24,6 +24,7 @@
 #include "locate_metadata-py.h"
 #include "exception-py.h"
 #include "typeconversion.h"
+#include "modulestate.h"
 
 typedef struct {
     PyObject_HEAD
@@ -40,11 +41,21 @@ MetadataLocation_FromPyObject(PyObject *o)
     return ((_MetadataLocationObject *) o)->ml;
 }
 
+int
+MetadataLocationObject_Check(PyObject *o)
+{
+    cr_module_state *state = get_cr_module_state_global();
+    if (!state) {
+        PyErr_Clear();
+        return 0;
+    }
+    return PyObject_TypeCheck(o, state->MetadataLocation_Type);
+}
+
 static int
 check_MetadataLocationStatus(const _MetadataLocationObject *self)
 {
     assert(self != NULL);
-    assert(MetadataLocationObject_Check(self));
     if (self->ml == NULL) {
         PyErr_SetString(CrErr_Exception, "Improper createrepo_c MetadataLocation object.");
         return -1;

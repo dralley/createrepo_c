@@ -25,6 +25,7 @@
 #include "exception-py.h"
 #include "typeconversion.h"
 #include "contentstat-py.h"
+#include "modulestate.h"
 
 typedef struct {
     PyObject_HEAD
@@ -41,7 +42,7 @@ Object_FromUpdateCollectionModule(cr_UpdateCollectionModule *mod)
         return NULL;
     }
 
-    py_rec = PyObject_CallObject((PyObject *) &UpdateCollectionModule_Type, NULL);
+    py_rec = PyObject_CallObject((PyObject *)get_cr_module_state_global()->UpdateCollectionModule_Type, NULL);
     if (!py_rec)
         return NULL;
     cr_updatecollectionmodule_free(((_UpdateCollectionModuleObject *)py_rec)->module);
@@ -60,11 +61,21 @@ UpdateCollectionModule_FromPyObject(PyObject *o)
     return ((_UpdateCollectionModuleObject *)o)->module;
 }
 
+int
+UpdateCollectionModuleObject_Check(PyObject *o)
+{
+    cr_module_state *state = get_cr_module_state_global();
+    if (!state) {
+        PyErr_Clear();
+        return 0;
+    }
+    return PyObject_TypeCheck(o, state->UpdateCollectionModule_Type);
+}
+
 static int
 check_UpdateCollectionModuleStatus(const _UpdateCollectionModuleObject *self)
 {
     assert(self != NULL);
-    assert(UpdateCollectionModuleObject_Check(self));
     if (self->module == NULL) {
         PyErr_SetString(CrErr_Exception, "Improper createrepo_c UpdateCollectionModule object.");
         return -1;

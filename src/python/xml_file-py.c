@@ -26,6 +26,7 @@
 #include "exception-py.h"
 #include "contentstat-py.h"
 #include "typeconversion.h"
+#include "modulestate.h"
 
 typedef struct {
     PyObject_HEAD
@@ -35,11 +36,21 @@ typedef struct {
 
 static PyObject * xmlfile_close(_XmlFileObject *self, void *nothing);
 
+int
+XmlFileObject_Check(PyObject *o)
+{
+    cr_module_state *state = get_cr_module_state_global();
+    if (!state) {
+        PyErr_Clear();
+        return 0;
+    }
+    return PyObject_TypeCheck(o, state->XmlFile_Type);
+}
+
 static int
 check_XmlFileStatus(const _XmlFileObject *self)
 {
     assert(self != NULL);
-    assert(XmlFileObject_Check(self));
     if (self->xmlfile == NULL) {
         PyErr_SetString(CrErr_Exception,
             "Improper createrepo_c XmlFile object (Already closed file?).");
@@ -202,7 +213,8 @@ add_pkg(_XmlFileObject *self, PyObject *args)
     PyObject *py_pkg;
     GError *err = NULL;
 
-    if (!PyArg_ParseTuple(args, "O!:add_pkg", &Package_Type, &py_pkg))
+    cr_module_state *state = get_cr_module_state_global();
+    if (!PyArg_ParseTuple(args, "O!:add_pkg", state->Package_Type, &py_pkg))
         return NULL;
 
     if (check_XmlFileStatus(self))

@@ -27,15 +27,17 @@
 #include "package-py.h"
 #include "exception-py.h"
 #include "updaterecord-py.h"
+#include "modulestate.h"
 
 PyObject *
-py_xml_dump_primary(G_GNUC_UNUSED PyObject *self, PyObject *args)
+py_xml_dump_primary(PyObject *self, PyObject *args)
 {
     PyObject *py_pkg, *py_str;
     char *xml;
     GError *err = NULL;
 
-    if (!PyArg_ParseTuple(args, "O!:py_xml_dump_primary", &Package_Type, &py_pkg))
+    cr_module_state *state = get_cr_module_state(self);
+    if (!PyArg_ParseTuple(args, "O!:py_xml_dump_primary", state->Package_Type, &py_pkg))
         return NULL;
 
     xml = cr_xml_dump_primary(Package_FromPyObject(py_pkg), &err);
@@ -51,13 +53,14 @@ py_xml_dump_primary(G_GNUC_UNUSED PyObject *self, PyObject *args)
 }
 
 PyObject *
-py_xml_dump_filelists(G_GNUC_UNUSED PyObject *self, PyObject *args)
+py_xml_dump_filelists(PyObject *self, PyObject *args)
 {
     PyObject *py_pkg, *py_str;
     char *xml;
     GError *err = NULL;
 
-    if (!PyArg_ParseTuple(args, "O!:py_xml_dump_filelists", &Package_Type, &py_pkg))
+    cr_module_state *state = get_cr_module_state(self);
+    if (!PyArg_ParseTuple(args, "O!:py_xml_dump_filelists", state->Package_Type, &py_pkg))
         return NULL;
 
     xml = cr_xml_dump_filelists(Package_FromPyObject(py_pkg), &err);
@@ -73,13 +76,14 @@ py_xml_dump_filelists(G_GNUC_UNUSED PyObject *self, PyObject *args)
 }
 
 PyObject *
-py_xml_dump_filelists_ext(G_GNUC_UNUSED PyObject *self, PyObject *args)
+py_xml_dump_filelists_ext(PyObject *self, PyObject *args)
 {
     PyObject *py_pkg, *py_str;
     char *xml;
     GError *err = NULL;
 
-    if (!PyArg_ParseTuple(args, "O!:py_xml_dump_filelists_ext", &Package_Type, &py_pkg))
+    cr_module_state *state = get_cr_module_state(self);
+    if (!PyArg_ParseTuple(args, "O!:py_xml_dump_filelists_ext", state->Package_Type, &py_pkg))
         return NULL;
 
     xml = cr_xml_dump_filelists_ext(Package_FromPyObject(py_pkg), &err);
@@ -95,13 +99,14 @@ py_xml_dump_filelists_ext(G_GNUC_UNUSED PyObject *self, PyObject *args)
 }
 
 PyObject *
-py_xml_dump_other(G_GNUC_UNUSED PyObject *self, PyObject *args)
+py_xml_dump_other(PyObject *self, PyObject *args)
 {
     PyObject *py_pkg, *py_str;
     char *xml;
     GError *err = NULL;
 
-    if (!PyArg_ParseTuple(args, "O!:py_xml_dump_other", &Package_Type, &py_pkg))
+    cr_module_state *state = get_cr_module_state(self);
+    if (!PyArg_ParseTuple(args, "O!:py_xml_dump_other", state->Package_Type, &py_pkg))
         return NULL;
 
     xml = cr_xml_dump_other(Package_FromPyObject(py_pkg), &err);
@@ -117,7 +122,7 @@ py_xml_dump_other(G_GNUC_UNUSED PyObject *self, PyObject *args)
 }
 
 PyObject *
-py_xml_dump(G_GNUC_UNUSED PyObject *self, PyObject *args)
+py_xml_dump(PyObject *self, PyObject *args)
 {
     PyObject *py_pkg, *tuple;
     gboolean filelists_ext = FALSE;
@@ -125,7 +130,8 @@ py_xml_dump(G_GNUC_UNUSED PyObject *self, PyObject *args)
     struct cr_XmlStruct xml_res;
     GError *err = NULL;
 
-    if (!PyArg_ParseTuple(args, "O!|p:py_xml_dump", &Package_Type, &py_pkg, &filelists_ext))
+    cr_module_state *state = get_cr_module_state(self);
+    if (!PyArg_ParseTuple(args, "O!|p:py_xml_dump", state->Package_Type, &py_pkg, &filelists_ext))
         return NULL;
 
     if (filelists_ext) {
@@ -160,14 +166,15 @@ py_xml_dump_end:
 }
 
 PyObject *
-py_xml_dump_updaterecord(G_GNUC_UNUSED PyObject *self, PyObject *args)
+py_xml_dump_updaterecord(PyObject *self, PyObject *args)
 {
     PyObject *py_rec, *py_str;
     char *xml = NULL;
     GError *err = NULL;
 
+    cr_module_state *state = get_cr_module_state(self);
     if (!PyArg_ParseTuple(args, "O!:py_xml_dump_updaterecord",
-                          &UpdateRecord_Type, &py_rec))
+                          state->UpdateRecord_Type, &py_rec))
         return NULL;
 
     xml = cr_xml_dump_updaterecord(UpdateRecord_FromPyObject(py_rec), &err);

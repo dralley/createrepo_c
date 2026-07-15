@@ -25,6 +25,7 @@
 #include "package-py.h"
 #include "exception-py.h"
 #include "typeconversion.h"
+#include "modulestate.h"
 
 typedef struct {
     PyObject_HEAD
@@ -35,11 +36,21 @@ typedef struct {
 static PyObject *close_db(_SqliteObject *self, void *nothing);
 
 
+int
+SqliteObject_Check(PyObject *o)
+{
+    cr_module_state *state = get_cr_module_state_global();
+    if (!state) {
+        PyErr_Clear();
+        return 0;
+    }
+    return PyObject_TypeCheck(o, state->Sqlite_Type);
+}
+
 static int
 check_SqliteStatus(const _SqliteObject *self)
 {
     assert(self != NULL);
-    assert(SqliteObject_Check(self));
     if (self->db == NULL) {
         PyErr_SetString(CrErr_Exception,
             "Improper createrepo_c Sqlite object (Already closed db?)");
@@ -143,7 +154,8 @@ add_pkg(_SqliteObject *self, PyObject *args)
     PyObject *py_pkg;
     GError *err = NULL;
 
-    if (!PyArg_ParseTuple(args, "O!:add_pkg", &Package_Type, &py_pkg))
+    cr_module_state *state = get_cr_module_state_global();
+    if (!PyArg_ParseTuple(args, "O!:add_pkg", state->Package_Type, &py_pkg))
         return NULL;
 
     if (check_SqliteStatus(self))

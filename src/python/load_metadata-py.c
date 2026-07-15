@@ -26,6 +26,7 @@
 #include "package-py.h"
 #include "exception-py.h"
 #include "typeconversion.h"
+#include "modulestate.h"
 
 /* TODO:
  * keys() and records() method (same method - alias only)
@@ -36,11 +37,21 @@ typedef struct {
     cr_Metadata *md;
 } _MetadataObject;
 
+int
+MetadataObject_Check(PyObject *o)
+{
+    cr_module_state *state = get_cr_module_state_global();
+    if (!state) {
+        PyErr_Clear();
+        return 0;
+    }
+    return PyObject_TypeCheck(o, state->Metadata_Type);
+}
+
 static int
 check_MetadataStatus(const _MetadataObject *self)
 {
     assert(self != NULL);
-    assert(MetadataObject_Check(self));
     if (self->md == NULL) {
         PyErr_SetString(PyExc_TypeError, "Improper createrepo_c Metadata object.");
         return -1;
@@ -145,7 +156,8 @@ load_xml(_MetadataObject *self, PyObject *args)
     PyObject *ml;
     GError *tmp_err = NULL;
 
-    if (!PyArg_ParseTuple(args, "O!:load_xml", &MetadataLocation_Type, &ml))
+    cr_module_state *state = get_cr_module_state_global();
+    if (!PyArg_ParseTuple(args, "O!:load_xml", state->MetadataLocation_Type, &ml))
         return NULL;
 
     if (check_MetadataStatus(self))

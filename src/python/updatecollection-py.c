@@ -27,6 +27,7 @@
 #include "exception-py.h"
 #include "typeconversion.h"
 #include "contentstat-py.h"
+#include "modulestate.h"
 
 typedef struct {
     PyObject_HEAD
@@ -43,7 +44,7 @@ Object_FromUpdateCollection(cr_UpdateCollection *rec)
         return NULL;
     }
 
-    py_rec = PyObject_CallObject((PyObject *) &UpdateCollection_Type, NULL);
+    py_rec = PyObject_CallObject((PyObject *)get_cr_module_state_global()->UpdateCollection_Type, NULL);
     if (!py_rec)
         return NULL;
     cr_updatecollection_free(((_UpdateCollectionObject *)py_rec)->collection);
@@ -62,11 +63,21 @@ UpdateCollection_FromPyObject(PyObject *o)
     return ((_UpdateCollectionObject *)o)->collection;
 }
 
+int
+UpdateCollectionObject_Check(PyObject *o)
+{
+    cr_module_state *state = get_cr_module_state_global();
+    if (!state) {
+        PyErr_Clear();
+        return 0;
+    }
+    return PyObject_TypeCheck(o, state->UpdateCollection_Type);
+}
+
 static int
 check_UpdateCollectionStatus(const _UpdateCollectionObject *self)
 {
     assert(self != NULL);
-    assert(UpdateCollectionObject_Check(self));
     if (self->collection == NULL) {
         PyErr_SetString(CrErr_Exception, "Improper createrepo_c UpdateCollection object.");
         return -1;
@@ -139,7 +150,8 @@ append(_UpdateCollectionObject *self, PyObject *args)
     PyObject *pkg;
     cr_UpdateCollectionPackage *orig, *new;
 
-    if (!PyArg_ParseTuple(args, "O!:append", &UpdateCollectionPackage_Type,
+    cr_module_state *state = get_cr_module_state_global();
+    if (!PyArg_ParseTuple(args, "O!:append", state->UpdateCollectionPackage_Type,
                           &pkg))
         return NULL;
     if (check_UpdateCollectionStatus(self))
