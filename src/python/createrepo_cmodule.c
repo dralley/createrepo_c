@@ -20,6 +20,7 @@
 #include <Python.h>
 #include "src/createrepo_c.h"
 
+#include "modulestate.h"
 #include "checksum-py.h"
 #include "compression_wrapper-py.h"
 #include "contentstat-py.h"
@@ -41,10 +42,6 @@
 #include "xml_dump-py.h"
 #include "xml_file-py.h"
 #include "xml_parser-py.h"
-
-struct module_state {
-    PyObject *error;
-};
 
 static struct PyMethodDef createrepo_c_methods[] = {
     {"package_from_rpm",        (PyCFunction)py_package_from_rpm,
@@ -96,79 +93,82 @@ static struct PyMethodDef createrepo_c_methods[] = {
     {NULL, NULL, 0, NULL} /* sentinel */
 };
 
-static struct PyModuleDef createrepo_c_module_def = {
-        PyModuleDef_HEAD_INIT,
-        "_createrepo_c",
-        NULL,
-        sizeof(struct module_state),
-        createrepo_c_methods,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-};
-
-PyObject *
-PyInit__createrepo_c(void)
+static int
+createrepo_c_add_type(PyObject *module, PyType_Spec *spec, const char *name,
+                      PyTypeObject **out)
 {
-    PyObject *m = PyModule_Create(&createrepo_c_module_def);
-    if (!m)
-        return NULL;
+    PyObject *type = PyType_FromModuleAndSpec(module, spec, NULL);
+    if (!type)
+        return -1;
+    *out = (PyTypeObject *)type;
+    if (PyModule_AddObjectRef(module, name, type) < 0) {
+        Py_DECREF(type);
+        *out = NULL;
+        return -1;
+    }
+    return 0;
+}
+
+static int
+createrepo_c_exec(PyObject *m)
+{
+    cr_module_state *state = get_cr_module_state(m);
 
     /* Exceptions */
     if (!init_exceptions())
-        return NULL;
-    PyModule_AddObjectRef(m, "CreaterepoCError", CrErr_Exception);
+        return -1;
+    if (PyModule_AddObjectRef(m, "CreaterepoCError", CrErr_Exception) < 0)
+        return -1;
 
-    /* Objects */
-
-    /* _createrepo_c.ContentStat */
-    PyModule_AddType(m, &ContentStat_Type);
-
-    /* _createrepo_c.CrFile */
-    PyModule_AddType(m, &CrFile_Type);
-
-    /* _createrepo_c.Package */
-    PyModule_AddType(m, &Package_Type);
-
-    /* _createrepo_c.Metadata */
-    PyModule_AddType(m, &Metadata_Type);
-
-    /* _createrepo_c.MetadataLocation */
-    PyModule_AddType(m, &MetadataLocation_Type);
-
-    /* _createrepo_c.Repomd */
-    PyModule_AddType(m, &Repomd_Type);
-
-    /* _createrepo_c.RepomdRecord */
-    PyModule_AddType(m, &RepomdRecord_Type);
-
-    /* _createrepo_c.Sqlite */
-    PyModule_AddType(m, &Sqlite_Type);
-
-    /* _createrepo_c.UpdateCollection */
-    PyModule_AddType(m, &UpdateCollection_Type);
-
-    /* _createrepo_c.UpdateCollectionModule */
-    PyModule_AddType(m, &UpdateCollectionModule_Type);
-
-    /* _createrepo_c.UpdateCollectionPackage */
-    PyModule_AddType(m, &UpdateCollectionPackage_Type);
-
-    /* _createrepo_c.UpdateInfo */
-    PyModule_AddType(m, &UpdateInfo_Type);
-
-    /* _createrepo_c.UpdateRecord */
-    PyModule_AddType(m, &UpdateRecord_Type);
-
-    /* _createrepo_c.UpdateReference */
-    PyModule_AddType(m, &UpdateReference_Type);
-
-    /* _createrepo_c.XmlFile */
-    PyModule_AddType(m, &XmlFile_Type);
-
-    /* _createrepo_c.PkgIterator */
-    PyModule_AddType(m, &PkgIterator_Type);
+    /* Types */
+    if (createrepo_c_add_type(m, &ContentStat_Type_spec, "ContentStat",
+                              &state->ContentStat_Type) < 0)
+        return -1;
+    if (createrepo_c_add_type(m, &CrFile_Type_spec, "CrFile",
+                              &state->CrFile_Type) < 0)
+        return -1;
+    if (createrepo_c_add_type(m, &Package_Type_spec, "Package",
+                              &state->Package_Type) < 0)
+        return -1;
+    if (createrepo_c_add_type(m, &Metadata_Type_spec, "Metadata",
+                              &state->Metadata_Type) < 0)
+        return -1;
+    if (createrepo_c_add_type(m, &MetadataLocation_Type_spec, "MetadataLocation",
+                              &state->MetadataLocation_Type) < 0)
+        return -1;
+    if (createrepo_c_add_type(m, &Repomd_Type_spec, "Repomd",
+                              &state->Repomd_Type) < 0)
+        return -1;
+    if (createrepo_c_add_type(m, &RepomdRecord_Type_spec, "RepomdRecord",
+                              &state->RepomdRecord_Type) < 0)
+        return -1;
+    if (createrepo_c_add_type(m, &Sqlite_Type_spec, "Sqlite",
+                              &state->Sqlite_Type) < 0)
+        return -1;
+    if (createrepo_c_add_type(m, &UpdateCollection_Type_spec, "UpdateCollection",
+                              &state->UpdateCollection_Type) < 0)
+        return -1;
+    if (createrepo_c_add_type(m, &UpdateCollectionModule_Type_spec, "UpdateCollectionModule",
+                              &state->UpdateCollectionModule_Type) < 0)
+        return -1;
+    if (createrepo_c_add_type(m, &UpdateCollectionPackage_Type_spec, "UpdateCollectionPackage",
+                              &state->UpdateCollectionPackage_Type) < 0)
+        return -1;
+    if (createrepo_c_add_type(m, &UpdateInfo_Type_spec, "UpdateInfo",
+                              &state->UpdateInfo_Type) < 0)
+        return -1;
+    if (createrepo_c_add_type(m, &UpdateRecord_Type_spec, "UpdateRecord",
+                              &state->UpdateRecord_Type) < 0)
+        return -1;
+    if (createrepo_c_add_type(m, &UpdateReference_Type_spec, "UpdateReference",
+                              &state->UpdateReference_Type) < 0)
+        return -1;
+    if (createrepo_c_add_type(m, &XmlFile_Type_spec, "XmlFile",
+                              &state->XmlFile_Type) < 0)
+        return -1;
+    if (createrepo_c_add_type(m, &PkgIterator_Type_spec, "PkgIterator",
+                              &state->PkgIterator_Type) < 0)
+        return -1;
 
     /* Createrepo init */
 
@@ -254,5 +254,81 @@ PyInit__createrepo_c(void)
     PyModule_AddIntConstant(m, "HDRR_LOADSIGNATURES", CR_HDRR_LOADSIGNATURES);
     PyModule_AddIntConstant(m, "HDRR_NOFILEDIGESTS", CR_HDRR_NOFILEDIGESTS);
 
-    return m;
+    return 0;
+}
+
+static int
+createrepo_c_traverse(PyObject *m, visitproc visit, void *arg)
+{
+    cr_module_state *state = get_cr_module_state(m);
+    Py_VISIT(state->error);
+    Py_VISIT(state->ContentStat_Type);
+    Py_VISIT(state->CrFile_Type);
+    Py_VISIT(state->Metadata_Type);
+    Py_VISIT(state->MetadataLocation_Type);
+    Py_VISIT(state->Package_Type);
+    Py_VISIT(state->PkgIterator_Type);
+    Py_VISIT(state->Repomd_Type);
+    Py_VISIT(state->RepomdRecord_Type);
+    Py_VISIT(state->Sqlite_Type);
+    Py_VISIT(state->UpdateCollection_Type);
+    Py_VISIT(state->UpdateCollectionModule_Type);
+    Py_VISIT(state->UpdateCollectionPackage_Type);
+    Py_VISIT(state->UpdateInfo_Type);
+    Py_VISIT(state->UpdateRecord_Type);
+    Py_VISIT(state->UpdateReference_Type);
+    Py_VISIT(state->XmlFile_Type);
+    return 0;
+}
+
+static int
+createrepo_c_clear(PyObject *m)
+{
+    cr_module_state *state = get_cr_module_state(m);
+    Py_CLEAR(state->error);
+    Py_CLEAR(state->ContentStat_Type);
+    Py_CLEAR(state->CrFile_Type);
+    Py_CLEAR(state->Metadata_Type);
+    Py_CLEAR(state->MetadataLocation_Type);
+    Py_CLEAR(state->Package_Type);
+    Py_CLEAR(state->PkgIterator_Type);
+    Py_CLEAR(state->Repomd_Type);
+    Py_CLEAR(state->RepomdRecord_Type);
+    Py_CLEAR(state->Sqlite_Type);
+    Py_CLEAR(state->UpdateCollection_Type);
+    Py_CLEAR(state->UpdateCollectionModule_Type);
+    Py_CLEAR(state->UpdateCollectionPackage_Type);
+    Py_CLEAR(state->UpdateInfo_Type);
+    Py_CLEAR(state->UpdateRecord_Type);
+    Py_CLEAR(state->UpdateReference_Type);
+    Py_CLEAR(state->XmlFile_Type);
+    return 0;
+}
+
+static void
+createrepo_c_free(void *m)
+{
+    createrepo_c_clear((PyObject *)m);
+}
+
+static PyModuleDef_Slot createrepo_c_slots[] = {
+    {Py_mod_exec, createrepo_c_exec},
+    {0, NULL}
+};
+
+struct PyModuleDef createrepo_c_module_def = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "_createrepo_c",
+    .m_size = sizeof(cr_module_state),
+    .m_methods = createrepo_c_methods,
+    .m_slots = createrepo_c_slots,
+    .m_traverse = createrepo_c_traverse,
+    .m_clear = createrepo_c_clear,
+    .m_free = createrepo_c_free,
+};
+
+PyMODINIT_FUNC
+PyInit__createrepo_c(void)
+{
+    return PyModuleDef_Init(&createrepo_c_module_def);
 }
