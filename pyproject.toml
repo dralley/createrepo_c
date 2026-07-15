@@ -9,6 +9,7 @@ readme = "README.md"
 license = "GPL-2.0-or-later"
 license-files = ["LICENSE"]
 dynamic = ["version"]
+requires-python = ">=3.11"
 authors = [
     {name = "RPM Software Management", email = "rpm-ecosystem@lists.rpm.org"},
 ]
@@ -18,7 +19,6 @@ classifiers = [
     "Topic :: System :: Software Distribution",
     "Topic :: System :: Systems Administration",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -44,6 +44,9 @@ before-build = "python -m pip install scikit-build-core"
 container-engine = "podman"
 test-requires = "pytest"
 test-command = "pytest --verbose --color=yes {project}/tests/python/tests/"
+
+[tool.scikit-build.wheel]
+py-api = "cp311"
 
 [tool.scikit-build]
 cmake.args = [

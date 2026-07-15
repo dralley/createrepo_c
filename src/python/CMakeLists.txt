@@ -45,8 +45,9 @@ SET (createrepo_cmodule_SRCS
     )
 
 IF (SKBUILD)
-    find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
-    Python_add_library(_createrepo_c MODULE WITH_SOABI ${createrepo_cmodule_SRCS})
+    find_package(Python REQUIRED COMPONENTS Interpreter Development.Module Development.SABIModule)
+    Python_add_library(_createrepo_c MODULE WITH_SOABI USE_SABI 3.11 ${createrepo_cmodule_SRCS})
+    target_compile_definitions(_createrepo_c PRIVATE Py_LIMITED_API=0x030B0000)
 ELSE ()
     EXECUTE_PROCESS(COMMAND ${PYTHON_EXECUTABLE} -c "from sys import stdout; from sysconfig import get_path; stdout.write(get_path('platlib'))" OUTPUT_VARIABLE PYTHON_INSTALL_DIR)
     INCLUDE_DIRECTORIES (${PYTHON_INCLUDE_PATH})
