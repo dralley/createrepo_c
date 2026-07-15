@@ -79,7 +79,7 @@ updatereference_new(PyTypeObject *type,
                     G_GNUC_UNUSED PyObject *args,
                     G_GNUC_UNUSED PyObject *kwds)
 {
-    _UpdateReferenceObject *self = (_UpdateReferenceObject *)type->tp_alloc(type, 0);
+    _UpdateReferenceObject *self = (_UpdateReferenceObject *)PyType_GenericAlloc(type, 0);
     if (self) {
         self->reference = NULL;
     }
@@ -113,8 +113,10 @@ updatereference_dealloc(_UpdateReferenceObject *self)
 {
     if (self->reference)
         cr_updatereference_free(self->reference);
-    freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
+    PyTypeObject *tp = Py_TYPE((PyObject *)self);
+    freefunc free_func = PyType_GetSlot(tp, Py_tp_free);
     free_func(self);
+    Py_DECREF(tp);
 }
 
 static PyObject *
@@ -193,17 +195,21 @@ static PyGetSetDef updatereference_getsetters[] = {
 
 /* Object */
 
-PyTypeObject UpdateReference_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "createrepo_c.UpdateReference",
-    .tp_basicsize = sizeof(_UpdateReferenceObject),
-    .tp_dealloc = (destructor) updatereference_dealloc,
-    .tp_repr = (reprfunc) updatereference_repr,
-    .tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-    .tp_doc = updatereference_init__doc__,
-    .tp_iter = PyObject_SelfIter,
-    .tp_methods = updatereference_methods,
-    .tp_getset = updatereference_getsetters,
-    .tp_init = (initproc) updatereference_init,
-    .tp_new = updatereference_new,
+static PyType_Slot UpdateReference_Type_slots[] = {
+    {Py_tp_dealloc, (destructor) updatereference_dealloc},
+    {Py_tp_repr, (reprfunc) updatereference_repr},
+    {Py_tp_doc, (void *) updatereference_init__doc__},
+    {Py_tp_iter, PyObject_SelfIter},
+    {Py_tp_methods, updatereference_methods},
+    {Py_tp_getset, updatereference_getsetters},
+    {Py_tp_init, (initproc) updatereference_init},
+    {Py_tp_new, updatereference_new},
+    {0, NULL}
+};
+
+PyType_Spec UpdateReference_Type_spec = {
+    .name = "createrepo_c.UpdateReference",
+    .basicsize = sizeof(_UpdateReferenceObject),
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .slots = UpdateReference_Type_slots,
 };

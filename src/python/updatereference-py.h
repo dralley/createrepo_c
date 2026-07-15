@@ -22,9 +22,9 @@
 
 #include "src/createrepo_c.h"
 
-extern PyTypeObject UpdateReference_Type;
+extern PyType_Spec UpdateReference_Type_spec;
 
-#define UpdateReferenceObject_Check(o)   PyObject_TypeCheck(o, &UpdateReference_Type)
+int UpdateReferenceObject_Check(PyObject *o);
 
 PyObject *Object_FromUpdateReference(cr_UpdateReference *rec);
 cr_UpdateReference *UpdateReference_FromPyObject(PyObject *o);

@@ -22,9 +22,9 @@
 
 #include "src/createrepo_c.h"
 
-extern PyTypeObject CrFile_Type;
+extern PyType_Spec CrFile_Type_spec;
 
-#define CrFileObject_Check(o)   PyObject_TypeCheck(o, &CrFile_Type)
+int CrFileObject_Check(PyObject *o);
 
 PyDoc_STRVAR(compression_suffix__doc__,
 "compression_suffix(compression_type) -> str or None\n\n"

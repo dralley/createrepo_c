@@ -55,7 +55,7 @@ metadata_new(PyTypeObject *type,
              G_GNUC_UNUSED PyObject *args,
              G_GNUC_UNUSED PyObject *kwds)
 {
-    _MetadataObject *self = (_MetadataObject *)type->tp_alloc(type, 0);
+    _MetadataObject *self = (_MetadataObject *)PyType_GenericAlloc(type, 0);
     if (self)
         self->md = NULL;
     return (PyObject *)self;
@@ -105,8 +105,10 @@ metadata_dealloc(_MetadataObject *self)
 {
     if (self->md)
         cr_metadata_free(self->md);
-    freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
+    PyTypeObject *tp = Py_TYPE((PyObject *)self);
+    freefunc free_func = PyType_GetSlot(tp, Py_tp_free);
     free_func(self);
+    Py_DECREF(tp);
 }
 
 static PyObject *
@@ -351,17 +353,21 @@ static struct PyMethodDef metadata_methods[] = {
 
 /* Object */
 
-PyTypeObject Metadata_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "createrepo_c.Metadata",
-    .tp_basicsize = sizeof(_MetadataObject),
-    .tp_dealloc = (destructor)metadata_dealloc,
-    .tp_repr = (reprfunc)metadata_repr,
-    .tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-    .tp_doc = metadata_init__doc__,
-    .tp_iter = PyObject_SelfIter,
-    .tp_methods = metadata_methods,
-    .tp_getset = metadata_getsetters,
-    .tp_init = (initproc)metadata_init,
-    .tp_new = metadata_new,
+static PyType_Slot Metadata_Type_slots[] = {
+    {Py_tp_dealloc, (destructor) metadata_dealloc},
+    {Py_tp_repr, (reprfunc) metadata_repr},
+    {Py_tp_doc, (void *) metadata_init__doc__},
+    {Py_tp_iter, PyObject_SelfIter},
+    {Py_tp_methods, metadata_methods},
+    {Py_tp_getset, metadata_getsetters},
+    {Py_tp_init, (initproc) metadata_init},
+    {Py_tp_new, metadata_new},
+    {0, NULL}
+};
+
+PyType_Spec Metadata_Type_spec = {
+    .name = "createrepo_c.Metadata",
+    .basicsize = sizeof(_MetadataObject),
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .slots = Metadata_Type_slots,
 };

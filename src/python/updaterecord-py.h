@@ -22,9 +22,9 @@
 
 #include "src/createrepo_c.h"
 
-extern PyTypeObject UpdateRecord_Type;
+extern PyType_Spec UpdateRecord_Type_spec;
 
-#define UpdateRecordObject_Check(o)   PyObject_TypeCheck(o, &UpdateRecord_Type)
+int UpdateRecordObject_Check(PyObject *o);
 
 PyObject *Object_FromUpdateRecord(cr_UpdateRecord *rec);
 cr_UpdateRecord *UpdateRecord_FromPyObject(PyObject *o);

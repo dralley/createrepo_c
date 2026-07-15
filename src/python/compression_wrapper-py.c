@@ -104,7 +104,7 @@ crfile_new(PyTypeObject *type,
            G_GNUC_UNUSED PyObject *args,
            G_GNUC_UNUSED PyObject *kwds)
 {
-    _CrFileObject *self = (_CrFileObject *)type->tp_alloc(type, 0);
+    _CrFileObject *self = (_CrFileObject *)PyType_GenericAlloc(type, 0);
     if (self) {
         self->f = NULL;
         self->py_stat = NULL;
@@ -174,8 +174,10 @@ crfile_dealloc(_CrFileObject *self)
 {
     cr_close(self->f, NULL);
     Py_XDECREF(self->py_stat);
-    freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
+    PyTypeObject *tp = Py_TYPE((PyObject *)self);
+    freefunc free_func = PyType_GetSlot(tp, Py_tp_free);
     free_func(self);
+    Py_DECREF(tp);
 }
 
 static PyObject *
@@ -256,16 +258,20 @@ static struct PyMethodDef crfile_methods[] = {
     {NULL, NULL, 0, NULL} /* sentinel */
 };
 
-PyTypeObject CrFile_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "createrepo_c.CrFile",
-    .tp_basicsize = sizeof(_CrFileObject),
-    .tp_dealloc = (destructor) crfile_dealloc,
-    .tp_repr = (reprfunc) crfile_repr,
-    .tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-    .tp_doc = "CrFile object",
-    .tp_iter = PyObject_SelfIter,
-    .tp_methods = crfile_methods,
-    .tp_init = (initproc) crfile_init,
-    .tp_new = crfile_new,
+static PyType_Slot CrFile_Type_slots[] = {
+    {Py_tp_dealloc, (destructor) crfile_dealloc},
+    {Py_tp_repr, (reprfunc) crfile_repr},
+    {Py_tp_doc, (void *) "CrFile object"},
+    {Py_tp_iter, PyObject_SelfIter},
+    {Py_tp_methods, crfile_methods},
+    {Py_tp_init, (initproc) crfile_init},
+    {Py_tp_new, crfile_new},
+    {0, NULL}
+};
+
+PyType_Spec CrFile_Type_spec = {
+    .name = "createrepo_c.CrFile",
+    .basicsize = sizeof(_CrFileObject),
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .slots = CrFile_Type_slots,
 };

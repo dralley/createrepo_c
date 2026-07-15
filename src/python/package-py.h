@@ -22,9 +22,9 @@
 
 #include "src/createrepo_c.h"
 
-extern PyTypeObject Package_Type;
+extern PyType_Spec Package_Type_spec;
 
-#define PackageObject_Check(o)   PyObject_TypeCheck(o, &Package_Type)
+int PackageObject_Check(PyObject *o);
 
 PyObject *Object_FromPackage(cr_Package *pkg, int free_on_destroy);
 cr_Package *Package_FromPyObject(PyObject *o);

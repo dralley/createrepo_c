@@ -55,7 +55,7 @@ sqlite_new(PyTypeObject *type,
            G_GNUC_UNUSED PyObject *args,
            G_GNUC_UNUSED PyObject *kwds)
 {
-    _SqliteObject *self = (_SqliteObject *)type->tp_alloc(type, 0);
+    _SqliteObject *self = (_SqliteObject *)PyType_GenericAlloc(type, 0);
     if (self)
         self->db = NULL;
     return (PyObject *)self;
@@ -108,8 +108,10 @@ sqlite_dealloc(_SqliteObject *self)
     if (self->db)
         cr_db_close(self->db, NULL);
 
-    freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
+    PyTypeObject *tp = Py_TYPE((PyObject *)self);
+    freefunc free_func = PyType_GetSlot(tp, Py_tp_free);
     free_func(self);
+    Py_DECREF(tp);
 }
 
 static PyObject *
@@ -212,16 +214,20 @@ static struct PyMethodDef sqlite_methods[] = {
     {NULL, NULL, 0, NULL} /* sentinel */
 };
 
-PyTypeObject Sqlite_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "createrepo_c.Sqlite",
-    .tp_basicsize = sizeof(_SqliteObject),
-    .tp_dealloc = (destructor) sqlite_dealloc,
-    .tp_repr = (reprfunc) sqlite_repr,
-    .tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-    .tp_doc = sqlite_init__doc__,
-    .tp_iter = PyObject_SelfIter,
-    .tp_methods = sqlite_methods,
-    .tp_init = (initproc) sqlite_init,
-    .tp_new = sqlite_new,
+static PyType_Slot Sqlite_Type_slots[] = {
+    {Py_tp_dealloc, (destructor) sqlite_dealloc},
+    {Py_tp_repr, (reprfunc) sqlite_repr},
+    {Py_tp_doc, (void *) sqlite_init__doc__},
+    {Py_tp_iter, PyObject_SelfIter},
+    {Py_tp_methods, sqlite_methods},
+    {Py_tp_init, (initproc) sqlite_init},
+    {Py_tp_new, sqlite_new},
+    {0, NULL}
+};
+
+PyType_Spec Sqlite_Type_spec = {
+    .name = "createrepo_c.Sqlite",
+    .basicsize = sizeof(_SqliteObject),
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .slots = Sqlite_Type_slots,
 };

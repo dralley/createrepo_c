@@ -59,7 +59,7 @@ metadatalocation_new(PyTypeObject *type,
                      G_GNUC_UNUSED PyObject *args,
                      G_GNUC_UNUSED PyObject *kwds)
 {
-    _MetadataLocationObject *self = (_MetadataLocationObject *)type->tp_alloc(type, 0);
+    _MetadataLocationObject *self = (_MetadataLocationObject *)PyType_GenericAlloc(type, 0);
     if (self)
         self->ml = NULL;
     return (PyObject *)self;
@@ -104,8 +104,10 @@ metadatalocation_dealloc(_MetadataLocationObject *self)
 {
     if (self->ml)
         cr_metadatalocation_free(self->ml);
-    freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
+    PyTypeObject *tp = Py_TYPE((PyObject *)self);
+    freefunc free_func = PyType_GetSlot(tp, Py_tp_free);
     free_func(self);
+    Py_DECREF(tp);
 }
 
 static PyObject *
@@ -212,25 +214,24 @@ getitem(_MetadataLocationObject *self, PyObject *pykey)
     }
 }
 
-static PyMappingMethods mapping_methods = {
-    .mp_length = (lenfunc) length,
-    .mp_subscript = (binaryfunc) getitem,
-    .mp_ass_subscript = NULL,
-};
-
 /* Object */
 
-PyTypeObject MetadataLocation_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "createrepo_c.MetadataLocation",
-    .tp_basicsize = sizeof(_MetadataLocationObject),
-    .tp_dealloc = (destructor)metadatalocation_dealloc,
-    .tp_repr = (reprfunc)metadatalocation_repr,
-    .tp_as_mapping = &mapping_methods,
-    .tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-    .tp_doc = metadatalocation_init__doc__,
-    .tp_iter = PyObject_SelfIter,
-    .tp_methods = metadatalocation_methods,
-    .tp_init = (initproc)metadatalocation_init,
-    .tp_new = metadatalocation_new,
+static PyType_Slot MetadataLocation_Type_slots[] = {
+    {Py_tp_dealloc, (destructor) metadatalocation_dealloc},
+    {Py_tp_repr, (reprfunc) metadatalocation_repr},
+    {Py_mp_length, (lenfunc) length},
+    {Py_mp_subscript, (binaryfunc) getitem},
+    {Py_tp_doc, (void *) metadatalocation_init__doc__},
+    {Py_tp_iter, PyObject_SelfIter},
+    {Py_tp_methods, metadatalocation_methods},
+    {Py_tp_init, (initproc) metadatalocation_init},
+    {Py_tp_new, metadatalocation_new},
+    {0, NULL}
+};
+
+PyType_Spec MetadataLocation_Type_spec = {
+    .name = "createrepo_c.MetadataLocation",
+    .basicsize = sizeof(_MetadataLocationObject),
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .slots = MetadataLocation_Type_slots,
 };
