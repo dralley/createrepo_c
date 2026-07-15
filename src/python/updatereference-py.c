@@ -230,6 +230,6 @@ static PyType_Slot UpdateReference_Type_slots[] = {
 PyType_Spec UpdateReference_Type_spec = {
     .name = "createrepo_c.UpdateReference",
     .basicsize = sizeof(_UpdateReferenceObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
     .slots = UpdateReference_Type_slots,
 };

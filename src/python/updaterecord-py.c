@@ -528,6 +528,6 @@ static PyType_Slot UpdateRecord_Type_slots[] = {
 PyType_Spec UpdateRecord_Type_spec = {
     .name = "createrepo_c.UpdateRecord",
     .basicsize = sizeof(_UpdateRecordObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
     .slots = UpdateRecord_Type_slots,
 };

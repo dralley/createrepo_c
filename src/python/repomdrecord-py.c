@@ -460,6 +460,6 @@ static PyType_Slot RepomdRecord_Type_slots[] = {
 PyType_Spec RepomdRecord_Type_spec = {
     .name = "createrepo_c.RepomdRecord",
     .basicsize = sizeof(_RepomdRecordObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
     .slots = RepomdRecord_Type_slots,
 };

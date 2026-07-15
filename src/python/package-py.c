@@ -674,6 +674,6 @@ static PyType_Slot Package_Type_slots[] = {
 PyType_Spec Package_Type_spec = {
     .name = "createrepo_c.Package",
     .basicsize = sizeof(_PackageObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
     .slots = Package_Type_slots,
 };

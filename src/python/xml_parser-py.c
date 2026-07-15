@@ -1014,6 +1014,6 @@ static PyType_Slot PkgIterator_Type_slots[] = {
 PyType_Spec PkgIterator_Type_spec = {
     .name = "createrepo_c.PkgIterator",
     .basicsize = sizeof(_PkgIteratorObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
     .slots = PkgIterator_Type_slots,
 };

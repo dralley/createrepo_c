@@ -260,6 +260,6 @@ static PyType_Slot UpdateCollectionModule_Type_slots[] = {
 PyType_Spec UpdateCollectionModule_Type_spec = {
     .name = "createrepo_c.UpdateCollectionModule",
     .basicsize = sizeof(_UpdateCollectionModuleObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
     .slots = UpdateCollectionModule_Type_slots,
 };
