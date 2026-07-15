@@ -106,9 +106,17 @@ contentstat_init(_ContentStatObject *self,
     return 0;
 }
 
+static int
+contentstat_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    Py_VISIT(Py_TYPE(op));
+    return 0;
+}
+
 static void
 contentstat_dealloc(_ContentStatObject *self)
 {
+    PyObject_GC_UnTrack(self);
     if (self->stat)
         cr_contentstat_free(self->stat, NULL);
     PyTypeObject *tp = Py_TYPE((PyObject *)self);
@@ -232,6 +240,7 @@ static PyGetSetDef contentstat_getsetters[] = {
 /* Object */
 
 static PyType_Slot ContentStat_Type_slots[] = {
+    {Py_tp_traverse, contentstat_traverse},
     {Py_tp_dealloc, (destructor) contentstat_dealloc},
     {Py_tp_repr, (reprfunc) contentstat_repr},
     {Py_tp_doc, (void *) contentstat_init__doc__},
@@ -245,6 +254,6 @@ static PyType_Slot ContentStat_Type_slots[] = {
 PyType_Spec ContentStat_Type_spec = {
     .name = "createrepo_c.ContentStat",
     .basicsize = sizeof(_ContentStatObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     .slots = ContentStat_Type_slots,
 };

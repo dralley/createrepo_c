@@ -139,9 +139,19 @@ xmlfile_init(_XmlFileObject *self, PyObject *args, G_GNUC_UNUSED PyObject *kwds)
     return 0;
 }
 
+static int
+xmlfile_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    _XmlFileObject *self = (_XmlFileObject *)op;
+    Py_VISIT(Py_TYPE(op));
+    Py_VISIT(self->py_stat);
+    return 0;
+}
+
 static void
 xmlfile_dealloc(_XmlFileObject *self)
 {
+    PyObject_GC_UnTrack(self);
     cr_xmlfile_close(self->xmlfile, NULL);
     Py_XDECREF(self->py_stat);
     PyTypeObject *tp = Py_TYPE((PyObject *)self);
@@ -292,6 +302,7 @@ static struct PyMethodDef xmlfile_methods[] = {
 };
 
 static PyType_Slot XmlFile_Type_slots[] = {
+    {Py_tp_traverse, xmlfile_traverse},
     {Py_tp_dealloc, (destructor) xmlfile_dealloc},
     {Py_tp_repr, (reprfunc) xmlfile_repr},
     {Py_tp_doc, (void *) xmlfile_init__doc__},
@@ -305,6 +316,6 @@ static PyType_Slot XmlFile_Type_slots[] = {
 PyType_Spec XmlFile_Type_spec = {
     .name = "createrepo_c.XmlFile",
     .basicsize = sizeof(_XmlFileObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     .slots = XmlFile_Type_slots,
 };

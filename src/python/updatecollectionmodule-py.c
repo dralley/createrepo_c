@@ -119,9 +119,17 @@ updatecollectionmodule_init(_UpdateCollectionModuleObject *self,
     return 0;
 }
 
+static int
+updatecollectionmodule_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    Py_VISIT(Py_TYPE(op));
+    return 0;
+}
+
 static void
 updatecollectionmodule_dealloc(_UpdateCollectionModuleObject *self)
 {
+    PyObject_GC_UnTrack(self);
     if (self->module)
         cr_updatecollectionmodule_free(self->module);
     PyTypeObject *tp = Py_TYPE((PyObject *)self);
@@ -237,6 +245,7 @@ static PyGetSetDef updatecollectionmodule_getsetters[] = {
 /* Object */
 
 static PyType_Slot UpdateCollectionModule_Type_slots[] = {
+    {Py_tp_traverse, updatecollectionmodule_traverse},
     {Py_tp_dealloc, (destructor) updatecollectionmodule_dealloc},
     {Py_tp_repr, (reprfunc) updatecollectionmodule_repr},
     {Py_tp_doc, (void *) updatecollectionmodule_init__doc__},
@@ -251,6 +260,6 @@ static PyType_Slot UpdateCollectionModule_Type_slots[] = {
 PyType_Spec UpdateCollectionModule_Type_spec = {
     .name = "createrepo_c.UpdateCollectionModule",
     .basicsize = sizeof(_UpdateCollectionModuleObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     .slots = UpdateCollectionModule_Type_slots,
 };

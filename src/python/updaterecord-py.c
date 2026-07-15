@@ -122,9 +122,17 @@ updaterecord_init(_UpdateRecordObject *self,
     return 0;
 }
 
+static int
+updaterecord_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    Py_VISIT(Py_TYPE(op));
+    return 0;
+}
+
 static void
 updaterecord_dealloc(_UpdateRecordObject *self)
 {
+    PyObject_GC_UnTrack(self);
     if (self->record)
         cr_updaterecord_free(self->record);
     PyTypeObject *tp = Py_TYPE((PyObject *)self);
@@ -505,6 +513,7 @@ static PyGetSetDef updaterecord_getsetters[] = {
 /* Object */
 
 static PyType_Slot UpdateRecord_Type_slots[] = {
+    {Py_tp_traverse, updaterecord_traverse},
     {Py_tp_dealloc, (destructor) updaterecord_dealloc},
     {Py_tp_repr, (reprfunc) updaterecord_repr},
     {Py_tp_doc, (void *) updaterecord_init__doc__},
@@ -519,6 +528,6 @@ static PyType_Slot UpdateRecord_Type_slots[] = {
 PyType_Spec UpdateRecord_Type_spec = {
     .name = "createrepo_c.UpdateRecord",
     .basicsize = sizeof(_UpdateRecordObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     .slots = UpdateRecord_Type_slots,
 };

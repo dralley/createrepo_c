@@ -180,9 +180,19 @@ crfile_init(_CrFileObject *self, PyObject *args, G_GNUC_UNUSED PyObject *kwds)
     return 0;
 }
 
+static int
+crfile_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    _CrFileObject *self = (_CrFileObject *)op;
+    Py_VISIT(Py_TYPE(op));
+    Py_VISIT(self->py_stat);
+    return 0;
+}
+
 static void
 crfile_dealloc(_CrFileObject *self)
 {
+    PyObject_GC_UnTrack(self);
     cr_close(self->f, NULL);
     Py_XDECREF(self->py_stat);
     PyTypeObject *tp = Py_TYPE((PyObject *)self);
@@ -270,6 +280,7 @@ static struct PyMethodDef crfile_methods[] = {
 };
 
 static PyType_Slot CrFile_Type_slots[] = {
+    {Py_tp_traverse, crfile_traverse},
     {Py_tp_dealloc, (destructor) crfile_dealloc},
     {Py_tp_repr, (reprfunc) crfile_repr},
     {Py_tp_doc, (void *) "CrFile object"},
@@ -283,6 +294,6 @@ static PyType_Slot CrFile_Type_slots[] = {
 PyType_Spec CrFile_Type_spec = {
     .name = "createrepo_c.CrFile",
     .basicsize = sizeof(_CrFileObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     .slots = CrFile_Type_slots,
 };

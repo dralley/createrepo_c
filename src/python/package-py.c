@@ -143,9 +143,19 @@ package_init(_PackageObject *self, PyObject *args, PyObject *kwds)
     return 0;
 }
 
+static int
+package_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    _PackageObject *self = (_PackageObject *)op;
+    Py_VISIT(Py_TYPE(op));
+    Py_VISIT(self->parent);
+    return 0;
+}
+
 static void
 package_dealloc(_PackageObject *self)
 {
+    PyObject_GC_UnTrack(self);
     if (self->package && self->free_on_destroy)
         cr_package_free(self->package);
     if (self->parent) {
@@ -648,6 +658,7 @@ static PyGetSetDef package_getsetters[] = {
 /* Object */
 
 static PyType_Slot Package_Type_slots[] = {
+    {Py_tp_traverse, package_traverse},
     {Py_tp_dealloc, (destructor) package_dealloc},
     {Py_tp_repr, (reprfunc) package_repr},
     {Py_tp_str, (reprfunc) package_str},
@@ -663,6 +674,6 @@ static PyType_Slot Package_Type_slots[] = {
 PyType_Spec Package_Type_spec = {
     .name = "createrepo_c.Package",
     .basicsize = sizeof(_PackageObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     .slots = Package_Type_slots,
 };

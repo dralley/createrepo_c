@@ -119,9 +119,17 @@ updatereference_init(_UpdateReferenceObject *self,
     return 0;
 }
 
+static int
+updatereference_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    Py_VISIT(Py_TYPE(op));
+    return 0;
+}
+
 static void
 updatereference_dealloc(_UpdateReferenceObject *self)
 {
+    PyObject_GC_UnTrack(self);
     if (self->reference)
         cr_updatereference_free(self->reference);
     PyTypeObject *tp = Py_TYPE((PyObject *)self);
@@ -207,6 +215,7 @@ static PyGetSetDef updatereference_getsetters[] = {
 /* Object */
 
 static PyType_Slot UpdateReference_Type_slots[] = {
+    {Py_tp_traverse, updatereference_traverse},
     {Py_tp_dealloc, (destructor) updatereference_dealloc},
     {Py_tp_repr, (reprfunc) updatereference_repr},
     {Py_tp_doc, (void *) updatereference_init__doc__},
@@ -221,6 +230,6 @@ static PyType_Slot UpdateReference_Type_slots[] = {
 PyType_Spec UpdateReference_Type_spec = {
     .name = "createrepo_c.UpdateReference",
     .basicsize = sizeof(_UpdateReferenceObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     .slots = UpdateReference_Type_slots,
 };

@@ -101,9 +101,17 @@ updateinfo_init(_UpdateInfoObject *self,
     return 0;
 }
 
+static int
+updateinfo_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    Py_VISIT(Py_TYPE(op));
+    return 0;
+}
+
 static void
 updateinfo_dealloc(_UpdateInfoObject *self)
 {
+    PyObject_GC_UnTrack(self);
     if (self->updateinfo)
         cr_updateinfo_free(self->updateinfo);
     PyTypeObject *tp = Py_TYPE((PyObject *)self);
@@ -286,6 +294,7 @@ static PyGetSetDef updateinfo_getsetters[] = {
 
 
 static PyType_Slot UpdateInfo_Type_slots[] = {
+    {Py_tp_traverse, updateinfo_traverse},
     {Py_tp_dealloc, (destructor) updateinfo_dealloc},
     {Py_tp_repr, (reprfunc) updateinfo_repr},
     {Py_tp_doc, (void *) updateinfo_init__doc__},
@@ -300,6 +309,6 @@ static PyType_Slot UpdateInfo_Type_slots[] = {
 PyType_Spec UpdateInfo_Type_spec = {
     .name = "createrepo_c.UpdateInfo",
     .basicsize = sizeof(_UpdateInfoObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     .slots = UpdateInfo_Type_slots,
 };

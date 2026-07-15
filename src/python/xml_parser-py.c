@@ -895,9 +895,24 @@ pkg_iterator_init(_PkgIteratorObject *self, PyObject *args, PyObject *kwargs)
     return 0;
 }
 
+static int
+pkg_iterator_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    _PkgIteratorObject *self = (_PkgIteratorObject *)op;
+    Py_VISIT(Py_TYPE(op));
+    if (self->cbdata) {
+        Py_VISIT(self->cbdata->py_newpkgcb);
+        Py_VISIT(self->cbdata->py_pkgcb);
+        Py_VISIT(self->cbdata->py_warningcb);
+        Py_VISIT(self->cbdata->py_pkgs);
+    }
+    return 0;
+}
+
 static void
 pkg_iterator_dealloc(_PkgIteratorObject *self)
 {
+    PyObject_GC_UnTrack(self);
     GError *tmp_err = NULL;
     if (self->pkg_iterator) {
         cr_PkgIterator_free(self->pkg_iterator, &tmp_err);
@@ -985,6 +1000,7 @@ static struct PyMethodDef pkg_iterator_methods[] = {
 /* Object */
 
 static PyType_Slot PkgIterator_Type_slots[] = {
+    {Py_tp_traverse, pkg_iterator_traverse},
     {Py_tp_dealloc, (destructor) pkg_iterator_dealloc},
     {Py_tp_doc, (void *) pkg_iterator_init__doc__},
     {Py_tp_iter, PyObject_SelfIter},
@@ -998,6 +1014,6 @@ static PyType_Slot PkgIterator_Type_slots[] = {
 PyType_Spec PkgIterator_Type_spec = {
     .name = "createrepo_c.PkgIterator",
     .basicsize = sizeof(_PkgIteratorObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     .slots = PkgIterator_Type_slots,
 };

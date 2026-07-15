@@ -110,9 +110,17 @@ metadatalocation_init(_MetadataLocationObject *self,
     return 0;
 }
 
+static int
+metadatalocation_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    Py_VISIT(Py_TYPE(op));
+    return 0;
+}
+
 static void
 metadatalocation_dealloc(_MetadataLocationObject *self)
 {
+    PyObject_GC_UnTrack(self);
     if (self->ml)
         cr_metadatalocation_free(self->ml);
     PyTypeObject *tp = Py_TYPE((PyObject *)self);
@@ -228,6 +236,7 @@ getitem(_MetadataLocationObject *self, PyObject *pykey)
 /* Object */
 
 static PyType_Slot MetadataLocation_Type_slots[] = {
+    {Py_tp_traverse, metadatalocation_traverse},
     {Py_tp_dealloc, (destructor) metadatalocation_dealloc},
     {Py_tp_repr, (reprfunc) metadatalocation_repr},
     {Py_mp_length, (lenfunc) length},
@@ -243,6 +252,6 @@ static PyType_Slot MetadataLocation_Type_slots[] = {
 PyType_Spec MetadataLocation_Type_spec = {
     .name = "createrepo_c.MetadataLocation",
     .basicsize = sizeof(_MetadataLocationObject),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     .slots = MetadataLocation_Type_slots,
 };
